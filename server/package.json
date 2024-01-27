@@ -1,0 +1,26 @@
+{
+  "name": "kgheatmap",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": ".",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "rum": "tsc -w src/index.ts",
+    "watch": "ts-node-dev --respawn --clear --rs --files src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mqtt": "^5.3.4",
+    "sqlite3": "^5.1.7",
+    "ts-node-dev": "^2.0.0",
+    "ws": "^8.16.0"
+  }
+}
