@@ -1,5 +1,10 @@
 import mqtt from 'mqtt';
-import { BROKER_ADDRESS, DB_FILE, MQTT_RESPONSE_TOPIC } from './constants';
+import {
+  BROKER_ADDRESS,
+  DB_FILE,
+  MAX_FILE_UPLOAD_SIZE,
+  MQTT_RESPONSE_TOPIC,
+} from './constants';
 
 import express from 'express';
 import sqlite from 'sqlite3';
@@ -7,6 +12,7 @@ import sqlite from 'sqlite3';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
+import fileUpload from 'express-fileupload';
 import { WebSocketServer } from 'ws';
 import { appApiController } from './rest/appApiController';
 import { sensorApiController } from './rest/sensorApiController';
@@ -32,6 +38,20 @@ const db = new sqlite.Database(DB_FILE, (error) => {
 
   app.use(cors());
   app.use(bodyParser.json());
+
+  app.use(
+    fileUpload({
+      limits: { fileSize: MAX_FILE_UPLOAD_SIZE },
+      debug: true,
+      limitHandler: (req, res) => {
+        res.send({
+          status: 'err',
+          message: 'Maximum file upload size is 50MB.',
+        });
+      },
+      abortOnLimit: true,
+    })
+  );
 
   // Add all rest API endpoints
   sensorApiController(app, db);
@@ -129,4 +149,3 @@ const db = new sqlite.Database(DB_FILE, (error) => {
     });
   });
 })();
-

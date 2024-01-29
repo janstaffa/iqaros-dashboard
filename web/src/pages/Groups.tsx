@@ -3,6 +3,7 @@ import { FaTimes } from 'react-icons/fa';
 import Modal from 'react-modal';
 import GroupRow from '../components/GroupRow';
 import { APP_API_BASE_PATH } from '../constants';
+import { GenericAppApiResponse, GroupListApiResponse, SensorGroup } from '../types';
 
 function Groups() {
   const [groupList, setGroupList] = useState<SensorGroup[]>([]);
@@ -10,7 +11,7 @@ function Groups() {
   groupsListRef.current = groupList;
 
   const fetchGroupList = () => {
-    return fetch(APP_API_BASE_PATH + '/grouplist')
+    fetch(APP_API_BASE_PATH + '/grouplist')
       .then((data) => data.json())
       .then((parsed_data) => {
         const response = parsed_data as GroupListApiResponse;
@@ -181,7 +182,12 @@ function Groups() {
                 <tr>
                   <td>Senzory ve skupině:</td>
                   <td>
-                    <textarea cols={30} rows={1} readOnly style={{maxWidth: "300px", maxHeight: "150px"}}>
+                    <textarea
+                      cols={30}
+                      rows={1}
+                      readOnly
+                      style={{ maxWidth: '300px', maxHeight: '150px' }}
+                    >
                       {displayedGroup?.sensors
                         .map((s) => s.sensor_name)
                         .join(', ')}

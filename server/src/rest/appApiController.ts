@@ -1,12 +1,19 @@
-import { Express } from 'express';
+import { Express, Request } from 'express';
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
 import sqlite from 'sqlite3';
-import { NEW_GROUP_NAME_TEMPLATE } from '../constants';
+import { v4 as uuidv4 } from 'uuid';
+import { MAP_DIRECTORY_PATH, NEW_GROUP_NAME_TEMPLATE } from '../constants';
+import { MapsDBObject } from '../types';
 import { auth, generateRandomColor } from './utils';
 
 export function appApiController(app: Express, db: sqlite.Database) {
   app.get('/', auth, (req, res) => {
     res.send('Homepage');
   });
+
+  // === Sensors ===
   app.get('/app/sensorlist', (req, res) => {
     try {
       db.all('SELECT * FROM sensors', async (err, rows: any) => {
@@ -102,6 +109,7 @@ export function appApiController(app: Express, db: sqlite.Database) {
     }
   });
 
+  // === Sensor groups ===
   const getUniqueGroupName = async (name: string) => {
     return new Promise((res, rej) => {
       db.all('SELECT group_name from sensor_groups', (err, rows: any) => {
@@ -153,6 +161,7 @@ export function appApiController(app: Express, db: sqlite.Database) {
       return res.json({ status: 'err', message: e });
     }
   });
+
   app.post('/app/newgroup', async (req, res) => {
     const newGroupName = await getUniqueGroupName(NEW_GROUP_NAME_TEMPLATE);
     const newGroupColor = generateRandomColor();
@@ -209,6 +218,237 @@ export function appApiController(app: Express, db: sqlite.Database) {
         }
       );
       return;
+    } catch (e) {
+      return res.json({ status: 'err', message: e });
+    }
+  });
+
+  // === Maps ===
+  app.post('/app/newmap', (req: Request, res) => {
+    try {
+      const { mapName } = req.body;
+      if (mapName == undefined || mapName.length == 0)
+        return res.json({
+          status: 'err',
+          message: 'Map name cannot be empty.',
+        });
+      if (!req.files || !req.files.file) {
+        return res.json({ status: 'err', message: 'No files were included.' });
+      }
+
+      if (Array.isArray(req.files.file) || req.files.file.truncated) {
+        return res.json({
+          status: 'err',
+          message: 'Invalid file multi file uploads not supported.',
+        });
+      }
+
+      const file = req.files.file;
+      const originalFileName = file.name;
+
+      let extension = '';
+      if (file.name.indexOf('.') !== -1) {
+        const dotArray = file.name.split('.');
+        extension = dotArray[dotArray.length - 1];
+      }
+
+      const newFileUuid = uuidv4();
+
+      const newFilePath = path.join(
+        MAP_DIRECTORY_PATH,
+        newFileUuid + '.' + extension
+      );
+      fs.writeFile(newFilePath, file.data, { encoding: 'binary' }, (err) => {
+        sharp(newFilePath)
+          .metadata()
+          .then((meta) => {
+            if (meta.width == undefined || meta.height == undefined)
+              return res.json({
+                status: 'err',
+                message: 'Invalid image.',
+              });
+
+            const timestamp = new Date().getTime();
+            db.run(
+              'INSERT INTO maps (map_name, image_id, image_width, image_height, original_image_name, image_extension, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              mapName,
+              newFileUuid,
+              meta.width,
+              meta.height,
+              originalFileName,
+              extension,
+              timestamp,
+              (err: any) => {
+                if (err)
+                  res.json({
+                    status: 'err',
+                    message: 'Failed to insert into database.',
+                  });
+
+                res.json({
+                  status: 'ok',
+                });
+              }
+            );
+            return;
+          })
+          .catch((err) => {
+            res.json({
+              status: 'err',
+              message: 'Uploaded file must be an image.',
+            });
+            console.error(err);
+          });
+      });
+      return;
+    } catch (e) {
+      return res.json({ status: 'err', message: e });
+    }
+  });
+
+  app.get('/app/maplist', (req, res) => {
+    db.all(
+      'SELECT * FROM maps ORDER BY timestamp DESC',
+      async (err, ms: MapsDBObject[]) => {
+        if (err) {
+          console.error(err);
+          return res.json({ status: 'err', message: 'Failed to fetch maps.' });
+        }
+
+        const maps: any[] = [];
+
+        for (const m of ms) {
+          const sensors = await new Promise((res, rej) => {
+            db.all(
+              `SELECT sensors.sensor_id, sensors.network_id, sensors.sensor_name, sensor_map_positions.pos_x, sensor_map_positions.pos_y
+               FROM sensor_map_positions
+               INNER JOIN sensors
+               ON sensor_map_positions.sensor_id = sensors.sensor_id
+               WHERE map_id = ?`,
+              m.map_id,
+              (err, sensors: any[]) => {
+                if (err) return rej(err);
+                const restructuredSensors = sensors.map((s) => ({
+                  sensor: {
+                    sensor_id: s['sensor_id'],
+                    network_id: s['network_id'],
+                    sensor_name: s['sensor_name'],
+                  },
+                  pos_x: s['pos_x'],
+                  pos_y: s['pos_y'],
+                }));
+                res(restructuredSensors);
+              }
+            );
+          });
+          const map = {
+            ...m,
+            sensors,
+          };
+          maps.push(map);
+        }
+        const response = {
+          status: 'ok',
+          data: maps,
+        };
+        return res.json(response);
+      }
+    );
+    return;
+  });
+
+  app.get('/app/mapimage/:mapId', (req, res) => {
+    const mapId = req.params.mapId;
+    if (!mapId) res.json({ status: 'err', message: 'No map ID specified.' });
+    db.all('SELECT * FROM maps WHERE map_id = ?', mapId, (err, rows) => {
+      if (rows.length === 0)
+        return res.json({
+          status: 'err',
+          message: 'Requested map does not exist.',
+        });
+      const result: any = rows[0];
+      const reqFilePath = path.join(
+        __dirname,
+        '../..',
+        MAP_DIRECTORY_PATH,
+        result['image_id'] + '.' + result['image_extension']
+      );
+      console.log(reqFilePath);
+      return res.sendFile(reqFilePath);
+    });
+  });
+
+  app.post('/app/removemap', (req, res) => {
+    try {
+      const { mapId } = req.body;
+
+      db.all(
+        `DELETE
+		     FROM maps
+	       WHERE map_id = ?
+         RETURNING *`,
+        mapId,
+        (err, rows: MapsDBObject[]) => {
+          if (!err && rows.length === 1) {
+            const map = rows[0];
+
+            const filePath = path.join(
+              MAP_DIRECTORY_PATH,
+              map.image_id + '.' + map.image_extension
+            );
+            fs.unlinkSync(filePath);
+          }
+        }
+      );
+
+      return res.json({ status: 'ok' });
+    } catch (e) {
+      return res.json({ status: 'err', message: e });
+    }
+  });
+
+  app.post('/app/editmap', (req, res) => {
+    try {
+      const {
+        mapId,
+        newMapName,
+        newSensors,
+      }: {
+        mapId: number;
+        newMapName: string;
+        newSensors: { sensorId: number; pos_x: number; pos_y: number }[];
+      } = req.body;
+
+      db.serialize(() => {
+        db.run(
+          `UPDATE maps
+         SET map_name = ?
+         WHERE map_id = ?`,
+          newMapName,
+          mapId
+        );
+
+        db.run(
+          `DELETE FROM sensor_map_positions
+         WHERE map_id = ?`,
+          mapId
+        );
+
+        let rowValuePlaceholders = newSensors
+          .map(() => '(?, ?, ?, ?)')
+          .join(', ');
+        let query =
+          'INSERT INTO sensor_map_positions (sensor_id, map_id, pos_x, pos_y) VALUES ' +
+          rowValuePlaceholders;
+
+        const values = [];
+        for (const s of newSensors)
+          values.push(s.sensorId, mapId, s.pos_x, s.pos_y);
+
+        db.run(query, values);
+      });
+
+      return res.json({ status: 'ok' });
     } catch (e) {
       return res.json({ status: 'err', message: e });
     }

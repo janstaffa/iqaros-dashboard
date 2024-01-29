@@ -14,7 +14,7 @@ function Nav() {
         <Link to="groups">Skupiny</Link>
       </div>
       <div>
-        <Link to="heatmap">Heatmap</Link>
+        <Link to="heatmap">Mapa</Link>
       </div>
       <div>
         <Link to="chart">Graf</Link>

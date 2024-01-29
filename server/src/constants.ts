@@ -18,3 +18,7 @@ export const RANDOM_GROUP_COLORS = [
   '#a919c2',
   '#14c1c4',
 ];
+
+export const MAX_FILE_UPLOAD_SIZE = 1024 * 1024 * 50; // 50 megabytes
+export const FILEUPLOAD_DIRECTORY_PATH = './userdata/upload';
+export const MAP_DIRECTORY_PATH = FILEUPLOAD_DIRECTORY_PATH + '/maps';

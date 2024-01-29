@@ -9,9 +9,17 @@ body {
 }
 main {
   padding: 10px;
+  height: calc(100vh - 50px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+main div {
+  width: 100%;
+  height: 100%;
 }
 nav {
   width: 100%;
+  height: 50px;
   display: flex;
   flex-direction: row;
   gap: 10px;
@@ -71,6 +79,8 @@ nav div a:hover {
   width: 100%;
   height: 100%;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -79,12 +89,14 @@ nav div a:hover {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-footer {
   width: 100%;
   position: absolute;
   bottom: 0;
+  flex-shrink: 0;
 }
 
 .sortable_column {
@@ -115,4 +127,151 @@ label {
 
 .modal table tr td {
   vertical-align: top;
+}
+
+.tabs_wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.tabs_header {
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+}
+.tab_control {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+}
+.tabs {
+  width: 100%;
+  height: 100%;
+  flex-grow: 1;
+  overflow: auto;
+}
+.tabs .tab {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.map_tools {
+  width: 40%;
+  min-width: fit-content;
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  justify-content: left;
+  height: 100%;
+}
+
+.map_tools * {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.map_compartment {
+  display: flex;
+  flex-direction: row;
+  margin-top: 20px;
+  flex-grow: 1;
+}
+
+.sensor_list {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 0 5px;
+  box-sizing: border-box;
+}
+
+.map_wrap {
+  flex-grow: 1;
+  /* position: relative; */
+}
+
+.error {
+  color: red;
+}
+
+.interactive_map {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  cursor: grab;
+  position: relative;
+  z-index: 10;
+}
+
+.interactive_map svg {
+  z-index: 9;
+}
+.interactive_map img {
+  user-select: none;
+  pointer-events: none;
+}
+
+.interactive_map * {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.modal_content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.interactive_map_controls {
+  z-index: 11;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: fit-content;
+  height: 30px;
+  display: flex;
+  flex-direction: row;
+}
+.interactive_map_controls button {
+  font-size: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+}
+
+.interactive_map_wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.sensor_list table {
+  width: 100%;
+  max-height: 300px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.sensor_list table td {
+  padding: 3px;
+  /* cursor: pointer; */
+}
+.sensor_list table td:hover {
+  background-color: #eee;
+}
+
+.sensor_list table td label {
+  cursor: pointer;
+}
+
+.displayed_sensor {
+  cursor: pointer;
+  user-select: none;
 }

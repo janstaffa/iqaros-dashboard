@@ -29,4 +29,3 @@ export function parseSensor(MQTTsensorData: MQTTSensorData): SensorData {
 
   return sensorData;
 }
-

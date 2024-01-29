@@ -3,3 +3,5 @@
 mosquitto_passwd
 mosquitto.conf
 data.db
+
+/userdata

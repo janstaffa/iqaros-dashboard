@@ -53,3 +53,28 @@ export interface SensorData {
   value: number;
   timestamp: number;
 }
+
+export interface MapsDBObject {
+  map_id: number;
+  map_name: string;
+  image_id: string;
+  image_width: number;
+  image_height: number;
+  original_image_name: string;
+  image_extension: string;
+  timestamp: number;
+}
+
+export interface SensorMapPositionsDBObject {
+  ID: number;
+  sensor_id: number;
+  map_id: number;
+  pos_x: number;
+  pos_y: number;
+}
+
+export interface SensorDBObject {
+  sensor_id: number;
+  network_id: number;
+  sensor_name: string;
+}

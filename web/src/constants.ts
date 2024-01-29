@@ -9,3 +9,8 @@ export enum SensorStatus {
 }
 
 export const POOLING_INTERVAL = 10 * 1000;
+
+export const ZOOM_FACTOR = 0.15;
+export const DEFAULT_ZOOM = 1;
+export const MAX_ZOOM = 10;
+export const MIN_ZOOM = 0.1;
