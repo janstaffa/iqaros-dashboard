@@ -45,13 +45,13 @@ export enum SensorDataParameter {
   Humidity,
   RSSI,
   Voltage,
+  ExtraLowVoltage,
 }
 export interface SensorData {
   sensorId: number;
   networkId: number;
   parameter: SensorDataParameter;
-  value: number;
-  timestamp: number;
+  data: SensorDataPayload;
 }
 
 export interface MapsDBObject {
@@ -77,4 +77,16 @@ export interface SensorDBObject {
   sensor_id: number;
   network_id: number;
   sensor_name: string;
+}
+
+export interface SensorDataAll {
+  temperature: SensorDataPayload;
+  humidity: SensorDataPayload;
+  rssi: SensorDataPayload;
+  voltage: SensorDataPayload;
+}
+
+export interface SensorDataPayload {
+  value: number;
+  timestamp: number;
 }

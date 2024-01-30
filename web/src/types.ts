@@ -17,7 +17,9 @@ export interface BaseSensor {
   sensor_name: string;
 }
 export interface Sensor extends BaseSensor {
+  data: SensorDataAll;
   groups: SensorGroup[];
+  last_response: number;
 }
 
 export interface GroupListApiResponse extends GenericAppApiResponse {
@@ -67,4 +69,31 @@ export enum DisplayParameter {
   Humidity,
   RSSI,
   Voltage,
+}
+
+export interface SensorDataAll {
+  temperature: SensorDataPayload;
+  humidity: SensorDataPayload;
+  rssi: SensorDataPayload;
+  voltage: SensorDataPayload;
+}
+
+export interface SensorDataPayload {
+  value: number;
+  timestamp: number;
+}
+
+export interface SortHead {
+  columnName: string;
+  sortPath: string;
+}
+export interface SortOptions {
+  sortPath: string;
+  sort: Sort;
+}
+
+export enum Sort {
+  Ascending,
+  Descending,
+  None,
 }

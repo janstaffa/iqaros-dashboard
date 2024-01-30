@@ -11,19 +11,24 @@ function getParameter(parameterStr: string): SensorDataParameter | null {
       return SensorDataParameter.RSSI;
     case 'VOLTAGE':
       return SensorDataParameter.Voltage;
+    case 'EXTRA_LOW_VOLTAGE':
+      return SensorDataParameter.ExtraLowVoltage;
   }
   return null;
 }
 
 export function parseSensor(MQTTsensorData: MQTTSensorData): SensorData {
   const sensor = MQTTsensorData.sensor;
+  if (!sensor) throw 'No sensor';
   const parameter = getParameter(sensor.id);
-  if (parameter == null) throw 'Unknown input';
+  if (parameter == null) throw 'Unknown input: ' + sensor.id;
   const sensorData: SensorData = {
-    timestamp: new Date().getTime(),
     sensorId: MQTTsensorData.nAdr - SENSOR_ADDRESS_RANGE_OFFSET,
     networkId: MQTTsensorData.nAdr,
-    value: MQTTsensorData.sensor.value,
+    data: {
+      value: MQTTsensorData.sensor.value,
+      timestamp: new Date().getTime(),
+    },
     parameter,
   };
 

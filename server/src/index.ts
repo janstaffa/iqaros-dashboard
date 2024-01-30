@@ -42,7 +42,7 @@ const db = new sqlite.Database(DB_FILE, (error) => {
   app.use(
     fileUpload({
       limits: { fileSize: MAX_FILE_UPLOAD_SIZE },
-      debug: true,
+      // debug: true,
       limitHandler: (req, res) => {
         res.send({
           status: 'err',
@@ -114,23 +114,48 @@ const db = new sqlite.Database(DB_FILE, (error) => {
     client.on('message', (topic, message) => {
       // message is Buffer
       const parsed_message = JSON.parse(message.toString()) as IQAROS_Response;
-      console.log('data', JSON.stringify(parsed_message));
+      // console.log('data', JSON.stringify(parsed_message));
       const sensors = parsed_message.data.rsp.result.sensors;
+
+      console.log(parsed_message.mType, parsed_message.data.msgId);
+      if (parsed_message.mType == 'iqrfEmbedFrc_SendSelective')
+        console.log(JSON.stringify(parsed_message));
       if (!sensors) return;
 
       for (const sensor of sensors) {
-        const parsedSensor = parseSensor(sensor);
-        console.log('sensor:', parsedSensor);
+        if (!sensor || sensor.nAdr === undefined || !sensor.sensor) continue;
         try {
-          db.run(
-            'INSERT INTO sensor_data (sensor_id, timestamp, parameter, value) VALUES (?, ?, ?, ?)',
-            parsedSensor.sensorId,
-            parsedSensor.timestamp,
-            parsedSensor.parameter,
-            parsedSensor.value
+          const parsedSensor = parseSensor(sensor);
+
+          db.all(
+            'SELECT * FROM sensors WHERE sensor_id = ? OR network_id = ?',
+            [parsedSensor.sensorId, parsedSensor.networkId],
+            (err, rows) => {
+              if (err) return console.error(err);
+              if (rows && rows.length === 0) {
+                db.run(
+                  'INSERT INTO sensors (sensor_id, network_id, sensor_name) VALUES (?, ?, ?)',
+                  parsedSensor.sensorId,
+                  parsedSensor.networkId,
+                  `Sensor ${parsedSensor.sensorId}`
+                );
+              }
+            }
           );
+          // console.log('parsed sensor:', parseSensor);
+          try {
+            db.run(
+              'INSERT INTO sensor_data (sensor_id, timestamp, parameter, value) VALUES (?, ?, ?, ?)',
+              parsedSensor.sensorId,
+              parsedSensor.data.timestamp,
+              parsedSensor.parameter,
+              parsedSensor.data.value
+            );
+          } catch (e) {
+            console.error(e);
+          }
         } catch (e) {
-          console.error(e);
+          console.log(e);
         }
       }
     });

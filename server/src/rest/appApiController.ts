@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import sqlite from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import { MAP_DIRECTORY_PATH, NEW_GROUP_NAME_TEMPLATE } from '../constants';
-import { MapsDBObject } from '../types';
+import { MapsDBObject, SensorDataAll } from '../types';
 import { auth, generateRandomColor } from './utils';
 
 export function appApiController(app: Express, db: sqlite.Database) {
@@ -20,6 +20,7 @@ export function appApiController(app: Express, db: sqlite.Database) {
         const sensors: any[] = [];
 
         for (const row of rows) {
+          const sensorId = row['sensor_id'];
           const groups = await new Promise<[]>((res, rej) => {
             db.all(
               `SELECT sensor_groups.group_id AS group_id, sensor_groups.group_name AS group_name, sensor_groups.group_color AS group_color
@@ -27,19 +28,71 @@ export function appApiController(app: Express, db: sqlite.Database) {
 			 INNER JOIN sensor_groups
 			 	ON sensors_in_groups.group_id = sensor_groups.group_id
 			 WHERE sensors_in_groups.sensor_id = ?`,
-              row['sensor_id'],
+              sensorId,
               (err, rows: any) => {
                 if (err) return rej(err);
                 res(rows);
               }
             );
           });
-          const sensor_data = {
+
+          const sensorData = await new Promise<SensorDataAll>((res, rej) => {
+            db.all(
+              `SELECT temp.value AS temperature, temp.timestamp AS temperature_timestamp, humidity.value AS humidity, humidity.timestamp AS humidity_timestamp, rssi.value AS rssi, rssi.timestamp AS rssi_timestamp, voltage.value AS voltage, voltage.timestamp AS voltage_timestamp
+                    FROM 
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 0 ORDER BY timestamp DESC LIMIT 1) temp
+                      FULL JOIN
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 1 ORDER BY timestamp DESC LIMIT 1) humidity 
+                      FULL JOIN
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 2 ORDER BY timestamp DESC LIMIT 1) rssi
+                      FULL JOIN
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 4 ORDER BY timestamp DESC LIMIT 1) voltage`,
+              // ON (temp.sensor_id = humidity.sensor_id AND humidity.sensor_id = rssi.sensor_id AND rss.sensor_id = voltage.sensor_id);`,
+              [sensorId, sensorId, sensorId, sensorId],
+              (err, data) => {
+                if (err) return rej(err);
+                if (data.length === 0) return rej();
+                const {
+                  temperature,
+                  temperature_timestamp,
+                  humidity,
+                  humidity_timestamp,
+                  rssi,
+                  rssi_timestamp,
+                  voltage,
+                  voltage_timestamp,
+                } = data[0] as any;
+
+                res({
+                  temperature: {
+                    value: temperature,
+                    timestamp: temperature_timestamp,
+                  },
+                  humidity: {
+                    value: humidity,
+                    timestamp: humidity_timestamp,
+                  },
+                  rssi: {
+                    value: rssi,
+                    timestamp: rssi_timestamp,
+                  },
+                  voltage: {
+                    value: voltage,
+                    timestamp: voltage_timestamp,
+                  },
+                });
+              }
+            );
+          }).catch((e) => console.error(e));
+
+
+          const sensorObj = {
             ...row,
+            data: sensorData,
             groups: [...groups],
           };
 
-          sensors.push(sensor_data);
+          sensors.push(sensorObj);
         }
         const response = {
           status: 'ok',

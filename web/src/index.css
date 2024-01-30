@@ -43,6 +43,7 @@ nav div a:hover {
   border-collapse: collapse;
   font-size: 18px;
   position: relative;
+  overflow: auto;
 }
 .table_row {
   width: 100%;
@@ -274,4 +275,9 @@ label {
 .displayed_sensor {
   cursor: pointer;
   user-select: none;
+}
+
+.sensor_list_wrap {
+  overflow-x: hidden;
+  overflow-y: auto;
 }

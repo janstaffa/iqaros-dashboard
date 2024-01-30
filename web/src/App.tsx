@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useMemo,
-  useState
-} from 'react';
+import { createContext, useCallback, useMemo, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -43,8 +38,19 @@ function App() {
   const fetchSensorList = useCallback(() => {
     fetch(APP_API_BASE_PATH + '/sensorlist')
       .then((data) => data.json())
-      .then((parsed_data) => {
-        setSensorList((parsed_data as SensorListApiResponse).data);
+      .then((parsed_data: SensorListApiResponse) => {
+        if (parsed_data.status === 'err') throw new Error(parsed_data.message);
+        const data = parsed_data.data.map((s) => {
+          const lastMessageTimestamp = Math.max(
+            s.data.temperature.timestamp,
+            s.data.humidity.timestamp,
+            s.data.rssi.timestamp,
+            s.data.voltage.timestamp
+          );
+          s['last_response'] = lastMessageTimestamp;
+          return s;
+        });
+        setSensorList(data);
       })
       .catch((e) => {
         throw e;
