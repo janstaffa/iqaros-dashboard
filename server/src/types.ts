@@ -90,3 +90,22 @@ export interface SensorDataPayload {
   value: number;
   timestamp: number;
 }
+
+export interface SensorDataDBObject {
+  ID: number;
+  sensor_id: number;
+  timestamp: number;
+  parameter: string;
+  value: number;
+}
+
+export interface FetchDataData {
+  temperature: FetchData;
+  humidity: FetchData;
+  rssi: FetchData;
+  voltage: FetchData;
+}
+interface FetchData {
+  values: number[];
+  timestamps: number[];
+}

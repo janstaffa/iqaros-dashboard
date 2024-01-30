@@ -31,7 +31,7 @@ function Sensors() {
   const sortHead: (SortHead | null)[] = [
     null,
     { columnName: 'ID', sortPath: 'sensor_id' },
-    { columnName: 'Síťové ID', sortPath: 'network_id' },
+    // { columnName: 'Síťové ID', sortPath: 'network_id' },
     { columnName: 'Název', sortPath: 'sensor_name' },
     {
       columnName: 'Teplota',

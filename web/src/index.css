@@ -13,7 +13,7 @@ main {
   overflow: hidden;
   box-sizing: border-box;
 }
-main div {
+main > div {
   width: 100%;
   height: 100%;
 }
@@ -280,4 +280,11 @@ label {
 .sensor_list_wrap {
   overflow-x: hidden;
   overflow-y: auto;
+  width: 100%;
+  height: 100%;
+}
+
+.chart_wrap {
+  width: auto;
+  height: auto;
 }

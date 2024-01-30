@@ -75,7 +75,7 @@ function SensorCard({ sensor, openModal }: SensorCardProps) {
         <GrStatusGoodSmall title={statusDisplayTitle} />
       </td>
       <td>{sensor.sensor_id}</td>
-      <td>{sensor.network_id}</td>
+      {/* <td>{sensor.network_id}</td> */}
       <td>{sensor.sensor_name}</td>
       <td>
         {formatSensorValue(sensorDataObject, DisplayParameter.Temperature)}

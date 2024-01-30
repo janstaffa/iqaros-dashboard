@@ -1,13 +1,13 @@
 export interface GenericSensorApiResponse {
   server_time: string;
 }
-export interface GenericAppApiResponse {
+export interface GenericApiResponse {
   status: string;
   message?: string;
   data?: any;
 }
 
-export interface SensorListApiResponse extends GenericAppApiResponse {
+export interface SensorListApiResponse extends GenericApiResponse {
   data: Sensor[];
 }
 
@@ -22,11 +22,11 @@ export interface Sensor extends BaseSensor {
   last_response: number;
 }
 
-export interface GroupListApiResponse extends GenericAppApiResponse {
+export interface GroupListApiResponse extends GenericApiResponse {
   data: SensorGroup[];
 }
 
-export interface MapListApiResponse extends GenericAppApiResponse {
+export interface MapListApiResponse extends GenericApiResponse {
   data: SensorMap[];
 }
 
@@ -96,4 +96,18 @@ export enum Sort {
   Ascending,
   Descending,
   None,
+}
+
+export interface FetchDataApiResponse extends GenericApiResponse {
+  data: FetchDataData;
+}
+export interface FetchDataData {
+  temperature: FetchData;
+  humidity: FetchData;
+  rssi: FetchData;
+  voltage: FetchData;
+}
+interface FetchData {
+  values: number[];
+  timestamps: number[];
 }

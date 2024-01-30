@@ -69,10 +69,6 @@ function App() {
       });
   }, []);
 
-  // useEffect(() => {
-  //   fetchSensorList();
-  //   fetchGroupList();
-  // }, [fetchSensorList, fetchGroupList]);
 
   const dataContextValue = useMemo(
     () => ({

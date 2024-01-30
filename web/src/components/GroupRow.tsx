@@ -1,5 +1,6 @@
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { GrStatusGoodSmall } from 'react-icons/gr';
+import { BaseSensor } from '../types';
 
 interface GroupRowProps {
   groupId: number;

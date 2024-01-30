@@ -3,7 +3,7 @@ import { FaTimes } from 'react-icons/fa';
 import Modal from 'react-modal';
 import GroupRow from '../components/GroupRow';
 import { APP_API_BASE_PATH } from '../constants';
-import { GenericAppApiResponse, GroupListApiResponse, SensorGroup } from '../types';
+import { GenericApiResponse, GroupListApiResponse, SensorGroup } from '../types';
 
 function Groups() {
   const [groupList, setGroupList] = useState<SensorGroup[]>([]);
@@ -46,7 +46,7 @@ function Groups() {
       body: JSON.stringify(payload),
     })
       .then((data) => data.json())
-      .then((parsed_data: GenericAppApiResponse) => {
+      .then((parsed_data: GenericApiResponse) => {
         if (parsed_data.status !== 'ok') throw new Error('Request failed');
         const newGroupList = [...groupsListRef.current];
         const filteredGroupList = newGroupList.filter(
@@ -77,7 +77,7 @@ function Groups() {
         body: JSON.stringify(payload),
       })
         .then((data) => data.json())
-        .then((parsed_data: GenericAppApiResponse) => {
+        .then((parsed_data: GenericApiResponse) => {
           if (parsed_data.status !== 'ok') throw new Error('Request failed');
           res(null);
         })

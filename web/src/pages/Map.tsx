@@ -10,7 +10,7 @@ import { APP_API_BASE_PATH } from '../constants';
 import {
   DisplayParameter,
   DisplayedSensor,
-  GenericAppApiResponse,
+  GenericApiResponse,
   MapListApiResponse,
   Sensor,
   SensorMap,
@@ -76,7 +76,7 @@ function Heatmap() {
         body: payload,
       })
         .then((data) => data.json())
-        .then((parsed_data: GenericAppApiResponse) => {
+        .then((parsed_data: GenericApiResponse) => {
           console.log(parsed_data);
           if (parsed_data.status === 'err') {
             return rej(parsed_data.message!);
@@ -104,7 +104,7 @@ function Heatmap() {
       body: JSON.stringify(payload),
     })
       .then((data) => data.json())
-      .then((parsed_data: GenericAppApiResponse) => {
+      .then((parsed_data: GenericApiResponse) => {
         if (parsed_data.status === 'err') {
           console.error(parsed_data.message);
           return;
@@ -140,7 +140,7 @@ function Heatmap() {
         body: JSON.stringify(payload),
       })
         .then((data) => data.json())
-        .then((parsed_data: GenericAppApiResponse) => {
+        .then((parsed_data: GenericApiResponse) => {
           if (parsed_data.status !== 'ok') throw new Error('Request failed');
           res(null);
         })

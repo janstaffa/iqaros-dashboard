@@ -2,7 +2,6 @@ import { useContext, useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { GrStatusGoodSmall } from 'react-icons/gr';
 import Modal from 'react-modal';
-import Plot from 'react-plotly.js';
 import { toast } from 'react-toastify';
 import { DataContext, FunctionContext } from '../../App';
 import { APP_API_BASE_PATH } from '../../constants';
@@ -130,24 +129,6 @@ const SensorModal: React.FC<SensorModalProps> = ({
               </tr>
             </tbody>
           </table>
-          <Plot
-            data={[
-              {
-                x: [1, 2, 3],
-
-                y: [2, 6, 3],
-
-                type: 'scatter',
-
-                mode: 'lines+markers',
-
-                marker: { color: 'red' },
-              },
-
-              { type: 'bar', x: [1, 2, 3], y: [2, 5, 3] },
-            ]}
-            layout={{ width: 320, height: 240, title: 'A Fancy Plot' }}
-          />
         </div>
         <div className="modal-footer">
           <button
