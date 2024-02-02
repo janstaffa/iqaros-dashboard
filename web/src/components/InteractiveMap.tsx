@@ -2,18 +2,34 @@ import { useEffect, useRef, useState } from 'react';
 import { MdZoomIn, MdZoomOut } from 'react-icons/md';
 import {
   APP_API_BASE_PATH,
+  COLOR_SCHEME_TABLES,
   DEFAULT_ZOOM,
+  HUMIDITY_RELATIVE_COLORS,
   MAX_ZOOM,
   MIN_ZOOM,
+  RSSI_RELATIVE_COLORS,
+  TEMPERATURE_RELATIVE_COLORS,
+  VOLTAGE_RELATIVE_COLORS,
   ZOOM_FACTOR,
 } from '../constants';
-import { DisplayParameter, DisplayedSensor, SensorMap } from '../types';
+import {
+  DisplayParameter,
+  DisplayedSensor,
+  MapColorScheme,
+  SensorMap,
+} from '../types';
+import {
+  displayParameterToKey,
+  getColorGradient,
+  getSensorValue,
+} from '../utils';
 import DisplayedSensorSVG from './DisplayedSensorSVG';
 
 export interface InteractiveMapProps {
   map: SensorMap;
   displayedSensors?: DisplayedSensor[];
   displayParameter: DisplayParameter;
+  colorScheme?: MapColorScheme;
   moveSensor?: (sensorId: number, newX: number, newY: number) => void;
   handleSensorClick?: (sensorId: number) => void;
 }
@@ -22,6 +38,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   map,
   displayedSensors = [],
   displayParameter,
+  colorScheme,
   moveSensor,
   handleSensorClick,
 }) => {
@@ -51,6 +68,67 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     const containerWidth = mapRef.current!.clientWidth;
     setMapZoom(computeZoomFactor(map.image_width, containerWidth));
   }, [map]);
+
+  type SensorColors = {
+    [sensorId: number]: string;
+  };
+  const [sensorColors, setSensorColors] = useState<SensorColors>({});
+
+  useEffect(() => {
+    if (
+      displayParameter === DisplayParameter.Name ||
+      colorScheme === undefined
+    ) {
+      const colors: SensorColors = {};
+      for (const s of displayedSensors) {
+        colors[s.sensor.sensor_id] = 'black';
+      }
+      setSensorColors(colors);
+      return;
+    }
+    const flatValues = displayedSensors
+      .filter((s) => s.data !== undefined)
+      .map((s) => getSensorValue(s.data!, displayParameter));
+
+    const minVal = Math.min(...flatValues);
+    const maxVal = Math.max(...flatValues);
+
+    const colorGradient: SensorColors = {};
+
+    const colors =
+      displayParameter === DisplayParameter.Temperature
+        ? TEMPERATURE_RELATIVE_COLORS
+        : displayParameter === DisplayParameter.Humidity
+        ? HUMIDITY_RELATIVE_COLORS
+        : displayParameter === DisplayParameter.RSSI
+        ? RSSI_RELATIVE_COLORS
+        : VOLTAGE_RELATIVE_COLORS;
+
+    for (const s of displayedSensors) {
+      if (!s.data) continue;
+      const val = s.data[displayParameterToKey(displayParameter)].value;
+      if (colorScheme === MapColorScheme.Relative) {
+        const i = (val - minVal) / (maxVal - minVal);
+
+        colorGradient[s.sensor.sensor_id] = getColorGradient(
+          colors[0],
+          colors[1],
+          i
+        );
+        continue;
+      }
+
+      let selectedColor = 'black';
+      for (const [value, color] of COLOR_SCHEME_TABLES[displayParameter - 1]) {
+        if (val < value) {
+          selectedColor = color;
+          break;
+        }
+      }
+      colorGradient[s.sensor.sensor_id] = selectedColor;
+    }
+    setSensorColors(colorGradient);
+  }, [displayedSensors, displayParameter, colorScheme]);
 
   return (
     <div className="interactive_map_wrap">
@@ -133,7 +211,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               onClick={() =>
                 handleSensorClick && handleSensorClick(s.sensor.sensor_id)
               }
-              data={s}
+              sensor={s}
+              color={sensorColors[s.sensor.sensor_id]}
               mapWidth={map.image_width * mapZoom}
               mapHeight={map.image_height * mapZoom}
               displayParameter={displayParameter}

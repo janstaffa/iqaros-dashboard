@@ -1,47 +1,59 @@
-import { DisplayParameter, DisplayedSensor } from '../types';
-import { formatSensorValue } from '../utils';
+import { DisplayParameter, DisplayedSensor, SensorData } from '../types';
+import { formatSensorData } from '../utils';
 
 export interface DisplayedSensorSVGProps {
-  data: DisplayedSensor;
+  sensor: DisplayedSensor;
   mapWidth: number;
   mapHeight: number;
   displayParameter: DisplayParameter;
-  onClick?: (e: React.MouseEvent) => void; 
-  onMouseDown?: (e: React.MouseEvent) => void; 
+  color: string;
+  onClick?: (e: React.MouseEvent) => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
 }
 
 const DisplayedSensorSVG: React.FC<DisplayedSensorSVGProps> = ({
-  data,
+  sensor,
   mapWidth,
   mapHeight,
   displayParameter,
+  color,
   onClick,
-  onMouseDown
+  onMouseDown,
 }) => {
-  const relativePosX = mapWidth * (data.pos_x / 100);
-  const relativePosY = mapHeight * (data.pos_y / 100);
+  const relativePosX = mapWidth * (sensor.pos_x / 100);
+  const relativePosY = mapHeight * (sensor.pos_y / 100);
+
+  const sensorDataObject: SensorData = {
+    temperature: sensor.data?.temperature.value,
+    humidity: sensor.data?.humidity.value,
+    rssi: sensor.data?.rssi.value,
+    voltage: sensor.data?.voltage.value,
+  };
 
   let displayText =
     displayParameter === DisplayParameter.Name
-      ? data.sensor.sensor_name
-      : formatSensorValue(data.data, displayParameter);
+      ? sensor.sensor.sensor_name
+      : formatSensorData(sensorDataObject, displayParameter);
 
   return (
-    <g
-      onClick={onClick}
-	  onMouseDown={onMouseDown}
-      className="displayed_sensor"
-    >
-      <circle cx={relativePosX} cy={relativePosY} r="15" fill={displayParameter === DisplayParameter.Name ? "blackd" : data.color}/>
+    <g onClick={onClick} onMouseDown={onMouseDown} className="displayed_sensor">
+      <circle
+        cx={relativePosX}
+        cy={relativePosY}
+        r="20"
+        fill={displayParameter === DisplayParameter.Name ? 'black' : color}
+      />
       <text
         x={relativePosX}
         y={relativePosY}
         textAnchor="middle"
-        stroke="white"
         fill="white"
-        fontSize={10}
-        strokeWidth="1px"
+        fontSize={11}
+        strokeWidth="0.3px"
+        stroke="black"
+        fontWeight="bold"
         dy=".3em"
+        style={{ background: 'black' }}
       >
         {displayText}
       </text>

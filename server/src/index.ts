@@ -166,7 +166,6 @@ const db = new sqlite.Database(DB_FILE, (error) => {
 
     client.on('close', function () {
       console.log('Disconnected');
-      db.close();
     });
 
     client.on('error', function (error) {

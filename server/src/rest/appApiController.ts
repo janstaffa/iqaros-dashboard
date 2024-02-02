@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import sqlite from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import { MAP_DIRECTORY_PATH, NEW_GROUP_NAME_TEMPLATE } from '../constants';
-import { MapsDBObject, SensorDataAll } from '../types';
+import { DashboardTilesDBObject, MapsDBObject, SensorDataAll } from '../types';
 import { auth, generateRandomColor } from './utils';
 
 export function appApiController(app: Express, db: sqlite.Database) {
@@ -36,17 +36,18 @@ export function appApiController(app: Express, db: sqlite.Database) {
             );
           });
 
+          // Get latest data
           const sensorData = await new Promise<SensorDataAll>((res, rej) => {
             db.all(
               `SELECT temp.value AS temperature, temp.timestamp AS temperature_timestamp, humidity.value AS humidity, humidity.timestamp AS humidity_timestamp, rssi.value AS rssi, rssi.timestamp AS rssi_timestamp, voltage.value AS voltage, voltage.timestamp AS voltage_timestamp
-                    FROM 
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 0 ORDER BY timestamp DESC LIMIT 1) temp
-                      FULL JOIN
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 1 ORDER BY timestamp DESC LIMIT 1) humidity 
-                      FULL JOIN
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 2 ORDER BY timestamp DESC LIMIT 1) rssi
-                      FULL JOIN
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 4 ORDER BY timestamp DESC LIMIT 1) voltage`,
+              FROM
+              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 0 ORDER BY timestamp DESC LIMIT 1) temp
+                FULL JOIN
+              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 1 ORDER BY timestamp DESC LIMIT 1) humidity
+                FULL JOIN
+              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 2 ORDER BY timestamp DESC LIMIT 1) rssi
+                FULL JOIN
+              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 4 ORDER BY timestamp DESC LIMIT 1) voltage`,
               // ON (temp.sensor_id = humidity.sensor_id AND humidity.sensor_id = rssi.sensor_id AND rss.sensor_id = voltage.sensor_id);`,
               [sensorId, sensorId, sensorId, sensorId],
               (err, data) => {
@@ -84,7 +85,6 @@ export function appApiController(app: Express, db: sqlite.Database) {
               }
             );
           }).catch((e) => console.error(e));
-
 
           const sensorObj = {
             ...row,
@@ -181,7 +181,7 @@ export function appApiController(app: Express, db: sqlite.Database) {
 
   app.get('/app/grouplist', (req, res) => {
     try {
-      db.all('SELECT * FROM sensor_groups;', async (err, rows: any) => {
+      db.all('SELECT * FROM sensor_groups ORDER BY group_name;', async (err, rows: any) => {
         const groups: any[] = [];
 
         for (const row of rows) {
@@ -263,7 +263,10 @@ export function appApiController(app: Express, db: sqlite.Database) {
         newColor,
         groupId,
         (err: any, rows: any) => {
-          if (err) throw err;
+          if (err)  {
+            console.log(err);
+            res.json({ status: 'err', message: "Failed to update group" })
+          };
           res.json({
             status: 'ok',
             data: { ...rows[0] },
@@ -371,34 +374,106 @@ export function appApiController(app: Express, db: sqlite.Database) {
         const maps: any[] = [];
 
         for (const m of ms) {
-          const sensors = await new Promise((res, rej) => {
-            db.all(
-              `SELECT sensors.sensor_id, sensors.network_id, sensors.sensor_name, sensor_map_positions.pos_x, sensor_map_positions.pos_y
+          try {
+            const sensors = await new Promise((res, rej) => {
+              db.all(
+                `SELECT sensors.sensor_id, sensors.network_id, sensors.sensor_name, sensor_map_positions.pos_x, sensor_map_positions.pos_y
                FROM sensor_map_positions
                INNER JOIN sensors
                ON sensor_map_positions.sensor_id = sensors.sensor_id
                WHERE map_id = ?`,
-              m.map_id,
-              (err, sensors: any[]) => {
-                if (err) return rej(err);
-                const restructuredSensors = sensors.map((s) => ({
-                  sensor: {
-                    sensor_id: s['sensor_id'],
-                    network_id: s['network_id'],
-                    sensor_name: s['sensor_name'],
-                  },
-                  pos_x: s['pos_x'],
-                  pos_y: s['pos_y'],
-                }));
-                res(restructuredSensors);
-              }
-            );
-          });
-          const map = {
-            ...m,
-            sensors,
-          };
-          maps.push(map);
+                m.map_id,
+                async (
+                  err,
+                  sensors: {
+                    sensor_id: number;
+                    network_id: number;
+                    sensor_name: string;
+                    pos_x: number;
+                    pos_y: number;
+                  }[]
+                ) => {
+                  if (err) return rej(err);
+
+                  const restructuredSensors = sensors.map(async (s) => {
+                    const sensorData = await new Promise<SensorDataAll | null>(
+                      (res, rej) =>
+                        db.all(
+                          `SELECT temp.value AS temperature, temp.timestamp AS temperature_timestamp, humidity.value AS humidity, humidity.timestamp AS humidity_timestamp, rssi.value AS rssi, rssi.timestamp AS rssi_timestamp, voltage.value AS voltage, voltage.timestamp AS voltage_timestamp
+                    FROM
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 0 ORDER BY timestamp DESC LIMIT 1) temp
+                      FULL JOIN
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 1 ORDER BY timestamp DESC LIMIT 1) humidity
+                      FULL JOIN
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 2 ORDER BY timestamp DESC LIMIT 1) rssi
+                      FULL JOIN
+                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 4 ORDER BY timestamp DESC LIMIT 1) voltage`,
+                          // ON (temp.sensor_id = humidity.sensor_id AND humidity.sensor_id = rssi.sensor_id AND rss.sensor_id = voltage.sensor_id);`,
+                          [s.sensor_id, s.sensor_id, s.sensor_id, s.sensor_id],
+                          (err, data) => {
+                            if (err) return rej(err);
+
+                            if (data.length === 0) return res(null);
+                            const {
+                              temperature,
+                              temperature_timestamp,
+                              humidity,
+                              humidity_timestamp,
+                              rssi,
+                              rssi_timestamp,
+                              voltage,
+                              voltage_timestamp,
+                            } = data[0] as any;
+
+                            res({
+                              temperature: {
+                                value: temperature,
+                                timestamp: temperature_timestamp,
+                              },
+                              humidity: {
+                                value: humidity,
+                                timestamp: humidity_timestamp,
+                              },
+                              rssi: {
+                                value: rssi,
+                                timestamp: rssi_timestamp,
+                              },
+                              voltage: {
+                                value: voltage,
+                                timestamp: voltage_timestamp,
+                              },
+                            });
+                          }
+                        )
+                    );
+                    return {
+                      sensor: {
+                        sensor_id: s['sensor_id'],
+                        network_id: s['network_id'],
+                        sensor_name: s['sensor_name'],
+                      },
+                      pos_x: s['pos_x'],
+                      pos_y: s['pos_y'],
+                      data: sensorData,
+                    };
+                  });
+                  const resolvedSensors = await Promise.all(
+                    restructuredSensors
+                  );
+                  res(resolvedSensors);
+                }
+              );
+            });
+
+            const map = {
+              ...m,
+              sensors,
+            };
+            maps.push(map);
+          } catch (e) {
+            console.log(e);
+            return null;
+          }
         }
         const response = {
           status: 'ok',
@@ -426,7 +501,6 @@ export function appApiController(app: Express, db: sqlite.Database) {
         MAP_DIRECTORY_PATH,
         result['image_id'] + '.' + result['image_extension']
       );
-      console.log(reqFilePath);
       return res.sendFile(reqFilePath);
     });
   });
@@ -502,6 +576,128 @@ export function appApiController(app: Express, db: sqlite.Database) {
       });
 
       return res.json({ status: 'ok' });
+    } catch (e) {
+      return res.json({ status: 'err', message: e });
+    }
+  });
+
+  // === Tiles ===
+  app.post('/app/posttile', (req: Request, res) => {
+    try {
+      const {
+        title,
+        order,
+        arg1,
+        arg1_type,
+        arg1_value,
+        arg2,
+        arg2_type,
+        arg2_value,
+        operation,
+        parameter,
+      } = req.body;
+
+      if (
+        title == undefined ||
+        order == undefined ||
+        arg1 == undefined ||
+        arg1_type == undefined ||
+        arg1_value == undefined ||
+        operation == undefined ||
+        parameter == undefined
+      )
+        return res.json({
+          status: 'err',
+          message: 'Invalid request',
+        });
+
+      db.run(
+        `INSERT
+         INTO dashboard_tiles (title, 'order', arg1, arg1_type, arg1_value, operation, parameter, arg2, arg2_type, arg2_value)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          title,
+          order,
+          arg1,
+          arg1_type,
+          arg1_value,
+          operation,
+          parameter,
+          arg2 == undefined ? null : arg2,
+          arg2_type == undefined ? null : arg2_type,
+          arg2_value == undefined ? null : arg2_value,
+        ],
+        (err: any) => {
+          console.log(err);
+          if (err)
+            return res.json({
+              status: 'err',
+              message: 'Failed to insert into database.',
+            });
+
+          return res.json({
+            status: 'ok',
+          });
+        }
+      );
+      return;
+    } catch (e) {
+      return res.json({ status: 'err', message: e });
+    }
+  });
+
+  app.get('/app/tilelist', (req, res) => {
+    try {
+      db.all(
+        `SELECT *
+         FROM dashboard_tiles`,
+        (err, rows: DashboardTilesDBObject[]) => {
+          if (err)
+            return res.json({
+              status: 'err',
+              message: 'Failed to get tiles from DB',
+            });
+
+          return res.json({
+            status: 'ok',
+            data: rows,
+          });
+        }
+      );
+      return;
+    } catch (e) {
+      return res.json({ status: 'err', message: e });
+    }
+  });
+
+  app.post('/app/removetile', (req: Request, res) => {
+    try {
+      const { tileId } = req.body;
+
+      if (tileId == undefined)
+        return res.json({
+          status: 'err',
+          message: 'Invalid request',
+        });
+
+      db.run(
+        `DELETE 
+         FROM dashboard_tiles
+         WHERE ID = ?`,
+        tileId,
+        (err: any) => {
+          if (err)
+            return res.json({
+              status: 'err',
+              message: 'Failed to remove from database.',
+            });
+
+          return res.json({
+            status: 'ok',
+          });
+        }
+      );
+      return;
     } catch (e) {
       return res.json({ status: 'err', message: e });
     }

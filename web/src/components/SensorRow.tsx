@@ -1,13 +1,16 @@
 import { FaEye } from 'react-icons/fa';
 import { GrStatusGoodSmall } from 'react-icons/gr';
 import {
+  BAD_SIGNAL_THRESHOLD,
+  GOOD_SIGNAL_THRESHOLD,
   NOT_AVAILABLE_TEXT,
   OFFLINE_THRESHOLD,
+  OK_SIGNAL_THRESHOLD,
   POOR_RESPONSE_THRESHOLD,
   SensorStatus,
 } from '../constants';
 import { DisplayParameter, Sensor, SensorData } from '../types';
-import { formatSensorValue } from '../utils';
+import { formatSensorData } from '../utils';
 interface SensorCardProps {
   sensor: Sensor;
   openModal: () => void;
@@ -62,13 +65,14 @@ function SensorCard({ sensor, openModal }: SensorCardProps) {
 
   const signal = sensor.data.rssi.value;
   const signalColor =
-    signal > -60
+    signal > GOOD_SIGNAL_THRESHOLD
       ? 'lime'
-      : signal > -85
+      : signal > OK_SIGNAL_THRESHOLD
       ? 'green'
-      : signal > -100
+      : signal > BAD_SIGNAL_THRESHOLD
       ? 'orange'
       : 'red';
+
   return (
     <tr className="table_row">
       <td style={{ color: statusDisplayColor }}>
@@ -78,12 +82,12 @@ function SensorCard({ sensor, openModal }: SensorCardProps) {
       {/* <td>{sensor.network_id}</td> */}
       <td>{sensor.sensor_name}</td>
       <td>
-        {formatSensorValue(sensorDataObject, DisplayParameter.Temperature)}
+        {formatSensorData(sensorDataObject, DisplayParameter.Temperature)}
       </td>
-      <td>{formatSensorValue(sensorDataObject, DisplayParameter.Humidity)}</td>
+      <td>{formatSensorData(sensorDataObject, DisplayParameter.Humidity)}</td>
       <td>{lastRecordDateText}</td>
       <td style={{ color: signalColor }}>
-        {formatSensorValue(sensorDataObject, DisplayParameter.RSSI)}
+        {formatSensorData(sensorDataObject, DisplayParameter.RSSI)}
       </td>
       <td className="table_row_options">
         <FaEye

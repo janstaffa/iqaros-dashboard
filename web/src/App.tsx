@@ -5,9 +5,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import Nav from './Nav';
 import { APP_API_BASE_PATH } from './constants';
 import Chart from './pages/Chart';
+import Dashboard from './pages/Dashboard';
 import Docs from './pages/Docs';
 import Groups from './pages/Groups';
-import Home from './pages/Home';
 import Heatmap from './pages/Map';
 import Sensors from './pages/Sensors';
 import {
@@ -94,13 +94,13 @@ function App() {
             <Nav />
             <main>
               <Routes>
-                <Route index element={<Home />} />
+                <Route index element={<Dashboard />} />
                 <Route path="heatmap" element={<Heatmap />} />
                 <Route path="sensors" element={<Sensors />} />
                 <Route path="groups" element={<Groups />} />
                 <Route path="chart" element={<Chart />} />
                 <Route path="docs" element={<Docs />} />
-                <Route path="*" element={<Home />} />
+                <Route path="*" element={<Dashboard />} />
               </Routes>
             </main>
           </BrowserRouter>

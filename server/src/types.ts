@@ -109,3 +109,17 @@ interface FetchData {
   values: number[];
   timestamps: number[];
 }
+
+export interface DashboardTilesDBObject {
+  ID: number;
+  order: number;
+  title: string;
+  arg1: number;
+  arg1_type: number;
+  arg1_value: number;
+  arg2: number;
+  arg2_type: number;
+  arg2_value: number;
+  operation: number;
+  parameter: number;
+}

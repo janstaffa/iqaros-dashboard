@@ -11,11 +11,15 @@ import {
   DisplayParameter,
   DisplayedSensor,
   GenericApiResponse,
+  MapColorScheme,
   MapListApiResponse,
   Sensor,
   SensorMap,
 } from '../types';
-import { parseDisplayParamter as parseDisplayParameter } from '../utils';
+import {
+  displayParameterToName,
+  parseDisplayParamter as parseDisplayParameter,
+} from '../utils';
 
 function Heatmap() {
   const data = useContext(DataContext);
@@ -34,7 +38,8 @@ function Heatmap() {
           console.error(response.message);
           return;
         }
-        console.log(response);
+
+        console.log(response.data);
         setMapList(response.data);
 
         if (response.data.length > 0) {
@@ -58,6 +63,8 @@ function Heatmap() {
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [detailMap, setDetailMap] = useState<SensorMap | null>(null);
+
+  // const [displayedSensors, setDisplayedSensors] = useState<DisplayedSensor[]>([]);
 
   const [isNewMap, setIsNewMap] = useState(false);
 
@@ -154,27 +161,6 @@ function Heatmap() {
 
   const [modalErrorMessage, setModalErrorMessage] = useState('');
 
-  // const testDisplayedSensors: DisplayedSensor[] = [
-  //   {
-  //     senor: { sensor_id: 1, sensor_name: 'TEST 1', network_id: 48 },
-  //     pos_x: 20,
-  //     pos_y: 20,
-  //     data: {
-  //       humidity: 35,
-  //     },
-  //     color: '#0000ff',
-  //   },
-  //   {
-  //     senor: { sensor_id: 2, sensor_name: 'TEST 2', network_id: 49 },
-  //     pos_x: 30,
-  //     pos_y: 80,
-  //     data: {
-  //       temperature: 35,
-  //     },
-  //     color: '#ff0000',
-  //   },
-  // ];
-
   const [newModalDisplayedSensors, setNewModalDisplayedSensors] = useState<
     DisplayedSensor[]
   >([]);
@@ -185,63 +171,83 @@ function Heatmap() {
 
   const [sensorModalOpen, setSensorModalOpen] = useState(false);
   const [detailSensor, setDetailSensor] = useState<Sensor | null>(null);
+
+  const [colorScheme, setColorScheme] = useState<MapColorScheme>(
+    MapColorScheme.Absolute
+  );
   return (
     <>
-      <div>
-        <h1>Mapa</h1>
-        <div className="tabs_wrap">
-          <div className="tabs_header">
-            <div className="tab_control">
-              {mapList.map((m, idx) => {
-                return (
-                  <button
-                    onClick={() => {
-                      setDisplayedMap(m);
-                      setDetailMap(m);
-                      setNewModalNameInput(m.map_name);
-                      setNewModalDisplayedSensors(m.sensors);
-                    }}
-                    key={idx}
-                  >
-                    {m.map_name}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => {
-                  setIsNewMap(true);
-                  setModalIsOpen(true);
-                  setNewModalNameInput('');
+      <div className="map_wrap">
+        <div className="map_header">
+          <div className="map_control">
+            {mapList.map((m, idx) => {
+              return (
+                <button
+                  onClick={() => {
+                    setDisplayedMap(m);
+                    setDetailMap(m);
+                    setNewModalNameInput(m.map_name);
+                    setNewModalDisplayedSensors(m.sensors);
+                  }}
+                  key={idx}
+                >
+                  {m.map_name}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => {
+                setIsNewMap(true);
+                setModalIsOpen(true);
+                setNewModalNameInput('');
+              }}
+            >
+              <MdAdd />
+            </button>
+          </div>
+          <div className="map_tools">
+            <div>
+              <select
+                value={colorScheme}
+                onChange={(e) => {
+                  setColorScheme(parseInt(e.target.value) as MapColorScheme);
                 }}
               >
-                <MdAdd />
-              </button>
+                <option value={MapColorScheme.Absolute}>Absolutní barvy</option>
+                <option value={MapColorScheme.Relative}>Relativní barvy</option>
+              </select>
             </div>
-            <div className="map_tools">
-              <div>
-                <input type="datetime-local" />
-              </div>
-              <div>
-                <select
-                  value={displayParameter}
-                  onChange={(e) => {
-                    const parsedDisplayParameter = parseDisplayParameter(
-                      parseInt(e.target.value)
-                    );
-                    if (parsedDisplayParameter !== undefined)
-                      setDisplayParameter(parsedDisplayParameter);
-                  }}
-                >
-                  <option value={DisplayParameter.Name}>Název senzoru</option>
-                  <option value={DisplayParameter.Temperature}>Teplota</option>
-                  <option value={DisplayParameter.Humidity}>Vlhkost</option>
-                  <option value={DisplayParameter.RSSI}>RSSI</option>
-                  <option value={DisplayParameter.Voltage}>Napětí</option>
-                </select>
-              </div>
+            <div>
+              <select
+                value={displayParameter}
+                onChange={(e) => {
+                  const parsedDisplayParameter = parseDisplayParameter(
+                    parseInt(e.target.value)
+                  );
+                  if (parsedDisplayParameter !== undefined)
+                    setDisplayParameter(parsedDisplayParameter);
+                }}
+              >
+                <option value={DisplayParameter.Name}>
+                  {displayParameterToName(DisplayParameter.Name)}
+                </option>
+                <option value={DisplayParameter.Temperature}>
+                  {displayParameterToName(DisplayParameter.Temperature)}
+                </option>
+                <option value={DisplayParameter.Humidity}>
+                  {displayParameterToName(DisplayParameter.Humidity)}
+                </option>
+                <option value={DisplayParameter.RSSI}>
+                  {displayParameterToName(DisplayParameter.RSSI)}
+                </option>
+                <option value={DisplayParameter.Voltage}>
+                  {displayParameterToName(DisplayParameter.Voltage)}
+                </option>
+              </select>
+            </div>
+            {detailMap && (
               <button
                 onClick={() => {
-                  if (!detailMap) return;
                   setIsNewMap(false);
                   setModalIsOpen(true);
                   setNewModalNameInput(detailMap.map_name);
@@ -249,30 +255,24 @@ function Heatmap() {
               >
                 <MdEdit />
               </button>
-            </div>
-          </div>
-          <div className="tabs">
-            {mapList.map((m, idx) => {
-              if (m !== displayedMap) return null;
-              return (
-                <div className="tab" key={idx}>
-                  <InteractiveMap
-                    map={m}
-                    displayedSensors={m.sensors}
-                    displayParameter={displayParameter}
-                    handleSensorClick={(sensorId) => {
-                      const sensor = data.sensorList.find(
-                        (s) => s.sensor_id === sensorId
-                      );
-                      if (sensor) setDetailSensor(sensor);
-                      setSensorModalOpen(true);
-                    }}
-                  />
-                </div>
-              );
-            })}
+            )}
           </div>
         </div>
+        {displayedMap && (
+          <InteractiveMap
+            map={displayedMap}
+            displayedSensors={displayedMap.sensors}
+            displayParameter={displayParameter}
+            colorScheme={colorScheme}
+            handleSensorClick={(sensorId) => {
+              const sensor = data.sensorList.find(
+                (s) => s.sensor_id === sensorId
+              );
+              if (sensor) setDetailSensor(sensor);
+              setSensorModalOpen(true);
+            }}
+          />
+        )}
       </div>
       <Modal
         isOpen={modalIsOpen}
@@ -338,8 +338,9 @@ function Heatmap() {
                           newModalDisplayedSensors.findIndex(
                             (x) => x.sensor.sensor_id === s.sensor_id
                           );
+
                         return (
-                          <tr key={idx} draggable>
+                          <tr key={idx} /*draggable*/>
                             <td
                               onDragStart={(e) => {
                                 e.dataTransfer.setData(
@@ -393,7 +394,7 @@ function Heatmap() {
                       moveSensor={(sensorId, newX, newY) => {
                         const updatedDisplayedSensors =
                           newModalDisplayedSensors.map((s) => ({ ...s }));
-                          
+
                         const sensorIdx = updatedDisplayedSensors.findIndex(
                           (s) => s.sensor.sensor_id === sensorId
                         );

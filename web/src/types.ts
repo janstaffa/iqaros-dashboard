@@ -52,8 +52,7 @@ export interface DisplayedSensor {
   sensor: BaseSensor;
   pos_x: number;
   pos_y: number;
-  data?: SensorData;
-  color?: string;
+  data?: SensorDataAll;
 }
 
 export interface SensorData {
@@ -99,15 +98,68 @@ export enum Sort {
 }
 
 export interface FetchDataApiResponse extends GenericApiResponse {
-  data: FetchDataData;
+  data: FetchDataDataWrapped;
 }
+
+export type FetchDataDataWrapped = { [sensorId: string]: FetchDataData };
+
 export interface FetchDataData {
   temperature: FetchData;
   humidity: FetchData;
   rssi: FetchData;
   voltage: FetchData;
 }
-interface FetchData {
-  values: number[];
+export interface FetchData {
+  values: (number | null)[];
   timestamps: number[];
+}
+
+export enum MapColorScheme {
+  Absolute,
+  Relative,
+}
+
+export enum DataParameter {
+  Temperature,
+  Humidity,
+  RSSI,
+  Voltage,
+}
+export enum TileArgumentType {
+  Group,
+  Sensor,
+}
+
+export enum TileArgumentValue {
+  Value,
+  Average,
+  Min,
+  Max,
+}
+
+export interface TileArgument {
+  type: TileArgumentType;
+  id: number;
+}
+
+export enum TileOperation {
+  Display,
+  Difference,
+}
+
+export interface Tile {
+  ID: number;
+  order: number;
+  title: string;
+  arg1: number;
+  arg1_type: number;
+  arg1_value: number;
+  arg2: number | null;
+  arg2_type: number | null;
+  arg2_value: number | null;
+  operation: number;
+  parameter: number;
+}
+export interface TileListApiResponse extends GenericApiResponse {
+  data: Tile[];
 }

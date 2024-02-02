@@ -3,7 +3,11 @@ import { FaTimes } from 'react-icons/fa';
 import Modal from 'react-modal';
 import GroupRow from '../components/GroupRow';
 import { APP_API_BASE_PATH } from '../constants';
-import { GenericApiResponse, GroupListApiResponse, SensorGroup } from '../types';
+import {
+  GenericApiResponse,
+  GroupListApiResponse,
+  SensorGroup,
+} from '../types';
 
 function Groups() {
   const [groupList, setGroupList] = useState<SensorGroup[]>([]);
@@ -103,43 +107,47 @@ function Groups() {
 
   return (
     <>
-      <div>
-        <h1>Skupiny</h1>
-        <button onClick={createNewGroup}>+ Nová skupina</button>
-        <table className="styled_table">
-          <thead>
-            <tr>
-              <td>Barva</td>
-              <td>Název skupiny</td>
-              <td>Senzory</td>
-              <td></td>
-            </tr>
-          </thead>
-          <tbody>
-            {groupList &&
-              groupList.map((group, idx) => {
-                return (
-                  <GroupRow
-                    groupId={group.group_id}
-                    groupColor={group.group_color}
-                    groupName={group.group_name}
-                    removeGroup={removeGroup}
-                    sensors={group.sensors}
-                    openModal={() => {
-                      const g =
-                        groupList?.find((g) => g.group_id === group.group_id) ||
-                        null;
-                      setDisplayedGroup(g);
-                      setDisplayedGroupNameInput(g!.group_name);
-                      setDisplayedGroupColorInput(g!.group_color);
-                      setIsOpen(true);
-                    }}
-                    key={idx}
-                  />
-                );
-              })}
-          </tbody>
-        </table>
+      <div className="page_wrap">
+        <div className="page_header">
+          <button onClick={createNewGroup}>+ Nová skupina</button>
+        </div>
+        <div className="page">
+          <table className="styled_table">
+            <thead>
+              <tr>
+                <td>Barva</td>
+                <td>Název skupiny</td>
+                <td>Senzory</td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody>
+              {groupList &&
+                groupList.map((group, idx) => {
+                  return (
+                    <GroupRow
+                      groupId={group.group_id}
+                      groupColor={group.group_color}
+                      groupName={group.group_name}
+                      removeGroup={removeGroup}
+                      sensors={group.sensors}
+                      openModal={() => {
+                        const g =
+                          groupList?.find(
+                            (g) => g.group_id === group.group_id
+                          ) || null;
+                        setDisplayedGroup(g);
+                        setDisplayedGroupNameInput(g!.group_name);
+                        setDisplayedGroupColorInput(g!.group_color);
+                        setIsOpen(true);
+                      }}
+                      key={idx}
+                    />
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
       </div>
       <Modal
         isOpen={modalIsOpen}

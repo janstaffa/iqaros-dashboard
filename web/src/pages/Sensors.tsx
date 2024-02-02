@@ -61,6 +61,7 @@ function Sensors() {
 
   useEffect(() => {
     const sorted = [...data.sensorList];
+    console.log(data.sensorList);
 
     if (sortOptions.sort !== Sort.None)
       sorted.sort((a, b) => {
@@ -86,82 +87,79 @@ function Sensors() {
 
   return (
     <>
-      <div>
-        <h1>Senzory</h1>
-        <div className="sensor_list_wrap">
-          <table className="styled_table">
-            <thead>
-              <tr>
-                {sortHead.map((sh, i) => (
-                  <td
-                    className={sh !== null ? 'sortable_column' : ''}
-                    onClick={() => {
-                      if (sh === null) return;
-                      if (sortOptions.sortPath === sh.sortPath) {
-                        let newSort = Sort.None;
-                        if (sortOptions.sort === Sort.None)
-                          newSort = Sort.Ascending;
-                        if (sortOptions.sort === Sort.Ascending)
-                          newSort = Sort.Descending;
-                        if (sortOptions.sort === Sort.Descending)
-                          newSort = Sort.None;
+      <div className="sensor_list_wrap">
+        <table className="styled_table">
+          <thead>
+            <tr>
+              {sortHead.map((sh, i) => (
+                <td
+                  className={sh !== null ? 'sortable_column' : ''}
+                  onClick={() => {
+                    if (sh === null) return;
+                    if (sortOptions.sortPath === sh.sortPath) {
+                      let newSort = Sort.None;
+                      if (sortOptions.sort === Sort.None)
+                        newSort = Sort.Ascending;
+                      if (sortOptions.sort === Sort.Ascending)
+                        newSort = Sort.Descending;
+                      if (sortOptions.sort === Sort.Descending)
+                        newSort = Sort.None;
 
-                        setSortOptions({ ...sortOptions, sort: newSort });
-                      } else {
-                        setSortOptions({
-                          sortPath: sh.sortPath,
-                          sort: Sort.Ascending,
-                        });
-                      }
-                    }}
-                    key={i}
-                  >
-                    {sh?.columnName}
-                    {sh !== null &&
-                      (sortOptions.sortPath === sh.sortPath ? (
-                        sortOptions.sort === Sort.Ascending ? (
-                          <FaSortUp />
-                        ) : sortOptions.sort === Sort.Descending ? (
-                          <FaSortDown />
-                        ) : (
-                          <FaSort />
-                        )
+                      setSortOptions({ ...sortOptions, sort: newSort });
+                    } else {
+                      setSortOptions({
+                        sortPath: sh.sortPath,
+                        sort: Sort.Ascending,
+                      });
+                    }
+                  }}
+                  key={i}
+                >
+                  {sh?.columnName}
+                  {sh !== null &&
+                    (sortOptions.sortPath === sh.sortPath ? (
+                      sortOptions.sort === Sort.Ascending ? (
+                        <FaSortUp />
+                      ) : sortOptions.sort === Sort.Descending ? (
+                        <FaSortDown />
                       ) : (
                         <FaSort />
-                      ))}
-                  </td>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedSensorList &&
-                sortedSensorList.map((sensor, idx) => {
-                  return (
-                    <SensorRow
-                      key={idx}
-                      sensor={sensor}
-                      openModal={() => {
-                        const s =
-                          data.sensorList.find(
-                            (s) => s.sensor_id === sensor.sensor_id
-                          ) || null;
-                        setDetailSensor(s);
-                        setModalIsOpen(true);
-                      }}
-                    />
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
-        {detailSensor && (
-          <SensorModal
-            isOpen={modalIsOpen}
-            setIsOpen={setModalIsOpen}
-            sensor={detailSensor}
-          />
-        )}
+                      )
+                    ) : (
+                      <FaSort />
+                    ))}
+                </td>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedSensorList &&
+              sortedSensorList.map((sensor, idx) => {
+                return (
+                  <SensorRow
+                    key={idx}
+                    sensor={sensor}
+                    openModal={() => {
+                      const s =
+                        data.sensorList.find(
+                          (s) => s.sensor_id === sensor.sensor_id
+                        ) || null;
+                      setDetailSensor(s);
+                      setModalIsOpen(true);
+                    }}
+                  />
+                );
+              })}
+          </tbody>
+        </table>
       </div>
+      {detailSensor && (
+        <SensorModal
+          isOpen={modalIsOpen}
+          setIsOpen={setModalIsOpen}
+          sensor={detailSensor}
+        />
+      )}
     </>
   );
 }
