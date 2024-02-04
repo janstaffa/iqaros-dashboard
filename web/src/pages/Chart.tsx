@@ -1,23 +1,26 @@
 import { useContext, useEffect, useState } from 'react';
+import { FaHome, FaTimes } from 'react-icons/fa';
+import { GoDash } from 'react-icons/go';
+import { GrStatusGoodSmall } from 'react-icons/gr';
 import Plot from 'react-plotly.js';
-import { DataContext, FunctionContext } from '../App';
+import { DataContext } from '../App';
 import { API_BASE_PATH } from '../constants';
 import {
-  DisplayParameter,
+  ChartedSensor,
+  DataParameter,
   FetchDataApiResponse,
   FetchDataDataWrapped,
 } from '../types';
 import {
-  displayParameterToKey,
-  displayParameterToName,
-  parseDisplayParamter,
-  randomColor,
+  convertToISOWithTimezone,
+  dataParameterToKey,
+  dataParameterToName,
+  getColorByParameter,
   removeGaps,
 } from '../utils';
 
 function Chart() {
   const dataProvider = useContext(DataContext);
-  const functions = useContext(FunctionContext);
 
   const [sensorData, setSensorData] = useState<FetchDataDataWrapped | null>(
     null
@@ -45,28 +48,48 @@ function Chart() {
       });
   }
 
-  const [displayedSensors, setDisplayedSensors] = useState<number[]>([]);
+  const [chartedSensors, setChartedSensors] = useState<ChartedSensor[]>([]);
 
-  const now = new Date().getTime();
+  const getHomeTimestamp = () => {
+    const now = new Date().getTime();
+    return [now - 24 * 60 * 60 * 1000, now];
+  };
+
+  const defaultTimestamp = getHomeTimestamp();
   const [timestampFrom, setTimestampFrom] = useState<number>(
-    now - 24 * 60 * 60 * 1000
+    defaultTimestamp[0]
   );
-  const [timestampTo, setTimestampTo] = useState<number>(now);
+  const [timestampTo, setTimestampTo] = useState<number>(defaultTimestamp[1]);
 
   useEffect(() => {
-    functions.fetchSensorList();
-    if (displayedSensors.length === 0) {
+    const chS = window.localStorage.getItem('chartedSensors');
+    if (chS !== null) {
+      setChartedSensors(JSON.parse(chS));
+    }
+  }, []);
+
+  // useEffect(() => {
+  //   console.log(chartedSensors);
+  // }, [chartedSensors]);
+
+  useEffect(() => {
+    if (chartedSensors.length === 0) {
       setSensorData(null);
       setChartData([]);
+      return;
     }
-    fetchSensorData(displayedSensors, timestampFrom, timestampTo);
-  }, [functions, displayedSensors, timestampFrom, timestampTo]);
+    const sensorsWithoutDuplicates = chartedSensors.filter(
+      (val, idx) =>
+        chartedSensors.findIndex((v) => v.sensor_id === val.sensor_id) === idx
+    );
+    fetchSensorData(
+      sensorsWithoutDuplicates.map((s) => s.sensor_id),
+      timestampFrom,
+      timestampTo
+    );
+  }, [chartedSensors, timestampFrom, timestampTo]);
 
   const [chartData, setChartData] = useState<any[]>();
-
-  const [displayParameter, setDisplayParameter] = useState<DisplayParameter>(
-    DisplayParameter.Temperature
-  );
 
   useEffect(() => {
     if (!sensorData) return;
@@ -104,184 +127,164 @@ function Chart() {
     };
 
     const traces = [];
-    for (const [sensorId, data] of Object.entries(sensorData)) {
-      const d = removeGaps(data[displayParameterToKey(displayParameter)]);
+
+    for (const s of chartedSensors) {
+      const data = sensorData[s.sensor_id];
+      if (!data) continue;
+
+      const d = removeGaps(data[dataParameterToKey(s.parameter)]);
       if (!d) continue;
-      // const humidityData = removeGaps(data.humidity);
-      // const rssiData = removeGaps(data.rssi);
-      // const voltageData = removeGaps(data.voltage);
 
       const sensor = dataProvider.sensorList.find(
-        (s) => s.sensor_id === parseInt(sensorId)
+        (sn) => sn.sensor_id === s.sensor_id
       );
+
       if (!sensor) continue;
 
-      const parameterName = displayParameterToName(displayParameter);
+      const parameterName = dataParameterToName(s.parameter);
       traces.push({
-        name: `${parameterName} - ${sensor.sensor_name}`,
+        name: `${sensor.sensor_name}`,
+        // name: sensor.sensor_name,
+        hoverlabel: { namelength: -1 },
         // x: temperatureData.timestamps.map(convertToISOWithTimezone),
-        x: d.timestamps.map((t) => new Date(t).toISOString()),
+        x: d.timestamps.map((t) => convertToISOWithTimezone(t)),
         y: d.values,
-        // fill: 'tonexty',
-        marker: { color: randomColor() },
+        // fill: 'toself',
+        marker: { color: getColorByParameter(s.parameter) },
+        hovertemplate: `<i>${parameterName}</i>: %{y:.2f}<br>%{x}<br>`,
         ...globalPlotOptions,
       });
-
-      // console.log(temperatureData.timestamps);
-      // setChartData([
-      //   {
-      //     name: 'Teplota',
-      //     // x: temperatureData.timestamps.map(convertToISOWithTimezone),
-      //     x: temperatureData.timestamps.map((t) => new Date(t).toISOString()),
-      //     y: temperatureData.values,
-      //     fill: 'tonexty',
-      //     marker: { color: 'red' },
-      //     ...globalPlotOptions,
-      //   },
-      //   {
-      //     name: 'Vlhkost',
-      //     // x: humidityData.timestamps.map(convertToISOWithTimezone),
-      //     x: humidityData.timestamps.map((t) => new Date(t).toISOString()),
-      //     y: humidityData.values,
-      //     fill: 'tonexty',
-      //     marker: { color: 'green' },
-      //     ...globalPlotOptions,
-      //   },
-      //   {
-      //     name: 'Signál',
-      //     // x: rssiData.timestamps.map(convertToISOWithTimezone),
-      //     x: rssiData.timestamps.map((t) => new Date(t).toISOString()),
-      //     y: rssiData.values,
-      //     marker: { color: 'orange' },
-      //     ...globalPlotOptions,
-      //   },
-      //   {
-      //     name: 'Napětí',
-      //     // x: voltageData.timestamps.map(convertToISOWithTimezone),
-      //     x: voltageData.timestamps.map((t) => new Date(t).toISOString()),
-      //     y: voltageData.values,
-      //     marker: { color: 'black' },
-      //     ...globalPlotOptions,
-      //   },
-      // ]);
     }
     setChartData(traces);
-  }, [sensorData, dataProvider, displayParameter]);
+  }, [dataProvider, sensorData, chartedSensors]);
 
-  // useEffect(() => {
-  //   console.log(chartData);
-  // }, [chartData]);
   const dateForDateTimeInputValue = (datetime: number) =>
     new Date(
       new Date(datetime).getTime() + new Date().getTimezoneOffset() * -60 * 1000
     )
       .toISOString()
       .slice(0, 16);
+
+  const [selectedSensor, setSelectedSensor] = useState<number | null>(null);
+  const [selectedParameter, setSelectedParameter] = useState<DataParameter>(
+    DataParameter.Temperature
+  );
   return (
-    <div>
-      <div className="chart_header">
-        <div>Test</div>
-        <div className="chart_tools">
-          <div>
-            <input
-              type="datetime-local"
-              value={dateForDateTimeInputValue(timestampFrom)}
-              onChange={(e) =>
-                setTimestampFrom(new Date(e.target.value).getTime())
-              }
-              max={dateForDateTimeInputValue(
-                Math.min(timestampTo, new Date().getTime())
-              )}
-            />
-            -
-            <input
-              type="datetime-local"
-              value={dateForDateTimeInputValue(timestampTo)}
-              onChange={(e) =>
-                setTimestampTo(new Date(e.target.value).getTime())
-              }
-              min={dateForDateTimeInputValue(timestampFrom)}
-            />
-          </div>
-          <div>
-            <select
-              value={displayParameter}
-              onChange={(e) => {
-                const parsedDisplayParameter = parseDisplayParamter(
-                  parseInt(e.target.value)
-                );
-                if (parsedDisplayParameter !== undefined)
-                  setDisplayParameter(parsedDisplayParameter);
-              }}
-            >
-              <option value={DisplayParameter.Temperature}>
-                {displayParameterToName(DisplayParameter.Temperature)}
-              </option>
-              <option value={DisplayParameter.Humidity}>
-                {displayParameterToName(DisplayParameter.Humidity)}
-              </option>
-              <option value={DisplayParameter.RSSI}>
-                {displayParameterToName(DisplayParameter.RSSI)}
-              </option>
-              <option value={DisplayParameter.Voltage}>
-                {displayParameterToName(DisplayParameter.Voltage)}
-              </option>
-            </select>
-          </div>
+    <>
+      <div className="page_header">
+        <div className="page_options">
+          <select
+            onChange={(e) => {
+              setSelectedSensor(parseInt(e.target.value));
+            }}
+            defaultValue={-1}
+          >
+            <option disabled hidden value={-1}>
+              -- vyberte --
+            </option>
+            {dataProvider.sensorList.map((s, idx) => {
+              return (
+                <option key={idx} value={s.sensor_id}>
+                  {s.sensor_name}
+                </option>
+              );
+            })}
+          </select>
+          <select
+            value={selectedParameter}
+            onChange={(e) => setSelectedParameter(parseInt(e.target.value))}
+          >
+            <option value={DataParameter.Temperature}>
+              {dataParameterToName(DataParameter.Temperature)}
+            </option>
+            <option value={DataParameter.Humidity}>
+              {dataParameterToName(DataParameter.Humidity)}
+            </option>
+            <option value={DataParameter.RSSI}>
+              {dataParameterToName(DataParameter.RSSI)}
+            </option>
+            <option value={DataParameter.Voltage}>
+              {dataParameterToName(DataParameter.Voltage)}
+            </option>
+          </select>
+          <button
+            onClick={() => {
+              if (selectedSensor === null) return;
+              const exists = chartedSensors.find(
+                (s) =>
+                  s.sensor_id === selectedSensor &&
+                  s.parameter === selectedParameter
+              );
+              if (exists) return;
+
+              let newChartedSensors: ChartedSensor[] = [...chartedSensors];
+              newChartedSensors.push({
+                sensor_id: selectedSensor,
+                parameter: selectedParameter,
+              });
+              setChartedSensors(newChartedSensors);
+              window.localStorage.setItem(
+                'chartedSensors',
+                JSON.stringify(newChartedSensors)
+              );
+            }}
+          >
+            Přidat
+          </button>
+        </div>
+        <div className="page_tools">
+          <input
+            type="datetime-local"
+            value={dateForDateTimeInputValue(timestampFrom)}
+            onChange={(e) =>
+              setTimestampFrom(new Date(e.target.value).getTime())
+            }
+            max={dateForDateTimeInputValue(
+              Math.min(timestampTo, new Date().getTime())
+            )}
+          />
+          <GoDash />
+          <input
+            type="datetime-local"
+            value={dateForDateTimeInputValue(timestampTo)}
+            onChange={(e) => setTimestampTo(new Date(e.target.value).getTime())}
+            min={dateForDateTimeInputValue(timestampFrom)}
+          />
+
+          <button
+            onClick={() => {
+              const homeTimestamp = getHomeTimestamp();
+              setTimestampFrom(homeTimestamp[0]);
+              setTimestampTo(homeTimestamp[1]);
+            }}
+          >
+            <FaHome size={20} />
+          </button>
         </div>
       </div>
       <div className="chart_wrap">
-        <div className="sensor_list">
-          <table>
-            <tbody>
-              {dataProvider.sensorList.map((s, idx) => {
-                const checkboxId = 'show-on-map_' + s.sensor_id;
-                const displayedSensorIdx = displayedSensors.findIndex(
-                  (x) => x === s.sensor_id
-                );
-                return (
-                  <tr key={idx} draggable>
-                    <td
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData(
-                          'sensorid',
-                          s.sensor_id.toString()
-                        );
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        id={checkboxId}
-                        checked={displayedSensorIdx !== -1}
-                        onChange={(e) => {
-                          let newDisplayedSensors: number[] = [
-                            ...displayedSensors,
-                          ];
-                          if (e.target.checked) {
-                            newDisplayedSensors.push(s.sensor_id);
-                          } else {
-                            newDisplayedSensors.splice(displayedSensorIdx, 1);
-                          }
-                          setDisplayedSensors(newDisplayedSensors);
-                        }}
-                      />
-                      <label htmlFor={checkboxId}>{s.sensor_name}</label>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
         <div className="chart">
           {chartData && (
             <Plot
+              onRelayout={(e) => {
+                const from = e['xaxis.range[0]'];
+                const to = e['xaxis.range[1]'];
+                if (from === undefined || to === undefined) return;
+
+                const newTimestampFrom = new Date(from).getTime();
+                const newTimestampTo = new Date(to).getTime();
+
+                setTimestampFrom(newTimestampFrom);
+                setTimestampTo(newTimestampTo);
+              }}
               data={chartData}
               useResizeHandler={true}
+              className={chartedSensors.length === 0 ? 'disabled' : ''}
               layout={{
                 // title: 'Senzor 1',
                 // xaxis: { ticktext: chartLabels, tickvals: chartLabelVals },
                 xaxis: {
+                  title: 'Čas',
                   range: [timestampFrom, timestampTo],
                   rangeselector: {
                     buttons: [
@@ -330,17 +333,27 @@ function Chart() {
                       { step: 'all', label: 'vše' },
                     ],
                   },
-                  rangeslider: {
-                    range: [
-                      '2015-02-17',
-                      dateForDateTimeInputValue(new Date().getTime()),
-                    ],
-                  },
+                  // rangeslider: {
+                  //   range: [
+                  //     '2015-02-17',
+                  //     dateForDateTimeInputValue(new Date().getTime()),
+                  //   ],
+                  // },
                   type: 'date',
                 },
-                yaxis: { zeroline: false, fixedrange: true },
+                yaxis: {
+                  zeroline: false,
+                  fixedrange: true,
+                  // title: displayParameterToName(displayParameter),
+                  rangemode: 'tozero',
+                },
                 dragmode: 'pan',
                 autosize: true,
+                showlegend: false,
+                // legend: {
+                //   xanchor: 'right',
+                //   bgcolor: 'rgba(255,255,255,0.8)',
+                // },
               }}
               config={{
                 displaylogo: false,
@@ -349,12 +362,60 @@ function Chart() {
                 responsive: true,
                 autosizable: true,
               }}
-              style={{ width: '100%', height: '500px' }}
+              style={{ width: '100%', height: '100%' }}
             />
           )}
         </div>
+        <div className="sensor_list">
+          <table>
+            <tbody>
+              {chartedSensors.map((s, idx) => {
+                const sensor = dataProvider.sensorList.find(
+                  (sn) => sn.sensor_id === s.sensor_id
+                );
+                if (sensor === undefined) return null;
+
+                return (
+                  <tr key={idx}>
+                    <td>
+                      <GrStatusGoodSmall
+                        size={25}
+                        color={getColorByParameter(s.parameter)}
+                      />
+                    </td>
+                    <td>{sensor.sensor_name}</td>
+                    <td>{dataParameterToName(s.parameter)}</td>
+                    <td>
+                      <FaTimes
+                        size={15}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                          let newChartedSensors: ChartedSensor[] = [
+                            ...chartedSensors,
+                          ];
+                          const chartedSensorIdx = chartedSensors.findIndex(
+                            (x) =>
+                              x.sensor_id === s.sensor_id &&
+                              x.parameter === s.parameter
+                          );
+                          newChartedSensors.splice(chartedSensorIdx, 1);
+                          setChartedSensors(newChartedSensors);
+
+                          window.localStorage.setItem(
+                            'chartedSensors',
+                            JSON.stringify(newChartedSensors)
+                          );
+                        }}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

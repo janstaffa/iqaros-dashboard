@@ -88,42 +88,52 @@ const SensorModal: React.FC<SensorModalProps> = ({
               <tr>
                 <td>Skupiny:</td>
                 <td>
-                  <div className="group_list_wrap">
-                    {data.groupList.map((g, idx) => {
-                      const elementId = `group_${g.group_id}`;
-                      return (
-                        <div key={idx}>
-                          <input
-                            type="checkbox"
-                            id={elementId}
-                            checked={checkedGroups.includes(g.group_id)}
-                            onChange={(e) => {
-                              if (e.target.checked === true) {
-                                if (!checkedGroups.includes(g.group_id)) {
-                                  setCheckedGroups([
-                                    ...checkedGroups,
-                                    g.group_id,
-                                  ]);
-                                }
-                              } else {
-                                const index = checkedGroups.findIndex(
-                                  (x) => x === g.group_id
-                                );
-                                if (index > -1) {
-                                  const newCheckedGroups = [...checkedGroups];
-                                  newCheckedGroups.splice(index, 1);
-                                  setCheckedGroups(newCheckedGroups);
-                                }
-                              }
-                            }}
-                          />
-                          <label htmlFor={elementId}>
-                            <GrStatusGoodSmall color={g.group_color} />
-                            {g.group_name}
-                          </label>
-                        </div>
-                      );
-                    })}
+                  <div className="group_list">
+                    <table>
+                      <tbody>
+                        {data.groupList.map((g, idx) => {
+                          const elementId = `group_${g.group_id}`;
+                          return (
+                            <tr key={idx}>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  id={elementId}
+                                  checked={checkedGroups.includes(g.group_id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked === true) {
+                                      if (!checkedGroups.includes(g.group_id)) {
+                                        setCheckedGroups([
+                                          ...checkedGroups,
+                                          g.group_id,
+                                        ]);
+                                      }
+                                    } else {
+                                      const index = checkedGroups.findIndex(
+                                        (x) => x === g.group_id
+                                      );
+                                      if (index > -1) {
+                                        const newCheckedGroups = [
+                                          ...checkedGroups,
+                                        ];
+                                        newCheckedGroups.splice(index, 1);
+                                        setCheckedGroups(newCheckedGroups);
+                                      }
+                                    }
+                                  }}
+                                />
+                              </td>
+                              <td>
+                                <label htmlFor={elementId}>
+                                  <GrStatusGoodSmall color={g.group_color} />
+                                  {g.group_name}
+                                </label>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </td>
               </tr>

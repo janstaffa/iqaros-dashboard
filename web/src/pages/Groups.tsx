@@ -1,31 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
-import Modal from 'react-modal';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { MdAdd } from 'react-icons/md';
+import { DataContext, FunctionContext } from '../App';
 import GroupRow from '../components/GroupRow';
+import GroupModal from '../components/Modals/GroupModal';
 import { APP_API_BASE_PATH } from '../constants';
-import {
-  GenericApiResponse,
-  GroupListApiResponse,
-  SensorGroup,
-} from '../types';
+import { GenericApiResponse, SensorGroup } from '../types';
 
 function Groups() {
-  const [groupList, setGroupList] = useState<SensorGroup[]>([]);
-  const groupsListRef = useRef(groupList);
-  groupsListRef.current = groupList;
+  const data = useContext(DataContext);
+  const functions = useContext(FunctionContext);
 
-  const fetchGroupList = () => {
-    fetch(APP_API_BASE_PATH + '/grouplist')
-      .then((data) => data.json())
-      .then((parsed_data) => {
-        const response = parsed_data as GroupListApiResponse;
-        console.log(response);
-        setGroupList(response.data);
-      })
-      .catch((e) => {
-        throw e;
-      });
-  };
+  const [localGroupList, setLocalGroupList] = useState<SensorGroup[]>([]);
+  const localGroupListRef = useRef(localGroupList);
+  localGroupListRef.current = localGroupList;
+
   function createNewGroup() {
     fetch(APP_API_BASE_PATH + '/newgroup', {
       method: 'POST',
@@ -33,7 +21,8 @@ function Groups() {
     })
       .then((data) => data.json())
       .then((parsed_data) => {
-        setGroupList([parsed_data['data'], ...groupsListRef.current]);
+        // Push it on top of the list
+        setLocalGroupList([parsed_data['data'], ...localGroupListRef.current]);
       })
       .catch((e) => console.error(e));
   }
@@ -52,178 +41,68 @@ function Groups() {
       .then((data) => data.json())
       .then((parsed_data: GenericApiResponse) => {
         if (parsed_data.status !== 'ok') throw new Error('Request failed');
-        const newGroupList = [...groupsListRef.current];
-        const filteredGroupList = newGroupList.filter(
-          (g) => g.group_id !== groupId
-        );
-        setGroupList(filteredGroupList);
+        functions.fetchGroupList();
       })
       .catch((e) => console.error(e));
   }
 
-  async function postEditedGroup(
-    groupId: number,
-    newName: string,
-    newColor: string
-  ) {
-    return new Promise((res, rej) => {
-      const payload = {
-        groupId,
-        newName,
-        newColor,
-      };
-      fetch(APP_API_BASE_PATH + '/editgroup', {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-        .then((data) => data.json())
-        .then((parsed_data: GenericApiResponse) => {
-          if (parsed_data.status !== 'ok') throw new Error('Request failed');
-          res(null);
-        })
-        .catch((e) => {
-          console.error(e);
-          rej(e);
-        });
-    });
-  }
-
   useEffect(() => {
-    fetchGroupList();
-  }, []);
+    setLocalGroupList(data.groupList);
+  }, [data]);
 
-  const [modalIsOpen, setIsOpen] = useState(false);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
   const [displayedGroup, setDisplayedGroup] = useState<SensorGroup | null>(
     null
   );
-  const [displayedGroupNameInput, setDisplayedGroupNameInput] =
-    useState<string>('');
-  const [displayedGroupColorInput, setDisplayedGroupColorInput] =
-    useState<string>('');
 
   return (
     <>
-      <div className="page_wrap">
-        <div className="page_header">
-          <button onClick={createNewGroup}>+ Nová skupina</button>
-        </div>
-        <div className="page">
-          <table className="styled_table">
-            <thead>
-              <tr>
-                <td>Barva</td>
-                <td>Název skupiny</td>
-                <td>Senzory</td>
-                <td></td>
-              </tr>
-            </thead>
-            <tbody>
-              {groupList &&
-                groupList.map((group, idx) => {
-                  return (
-                    <GroupRow
-                      groupId={group.group_id}
-                      groupColor={group.group_color}
-                      groupName={group.group_name}
-                      removeGroup={removeGroup}
-                      sensors={group.sensors}
-                      openModal={() => {
-                        const g =
-                          groupList?.find(
-                            (g) => g.group_id === group.group_id
-                          ) || null;
-                        setDisplayedGroup(g);
-                        setDisplayedGroupNameInput(g!.group_name);
-                        setDisplayedGroupColorInput(g!.group_color);
-                        setIsOpen(true);
-                      }}
-                      key={idx}
-                    />
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
+      <div className="floating_buttons">
+        <button onClick={createNewGroup}>
+          <MdAdd />
+        </button>
       </div>
-      <Modal
-        isOpen={modalIsOpen}
-        // style={customStyles}
-        contentLabel="Example Modal"
-        style={{ content: { padding: '20px' } }}
-      >
-        <div className="modal">
-          <div className="modal-header">
-            <h2>{displayedGroup?.group_name}</h2>
-            <FaTimes onClick={() => setIsOpen(false)} />
-          </div>
-          <div>
-            <table>
-              <tbody>
-                <tr>
-                  <td>Název:</td>
-                  <td>
-                    <input
-                      type="text"
-                      value={displayedGroupNameInput}
-                      onChange={(e) =>
-                        setDisplayedGroupNameInput(e.target.value)
-                      }
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td>Barva:</td>
-                  <td>
-                    <input
-                      type="color"
-                      value={displayedGroupColorInput}
-                      onChange={(e) =>
-                        setDisplayedGroupColorInput(e.target.value)
-                      }
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td>Senzory ve skupině:</td>
-                  <td>
-                    <textarea
-                      cols={30}
-                      rows={1}
-                      readOnly
-                      style={{ maxWidth: '300px', maxHeight: '150px' }}
-                    >
-                      {displayedGroup?.sensors
-                        .map((s) => s.sensor_name)
-                        .join(', ')}
-                    </textarea>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="modal-footer">
-            <button
-              onClick={async () => {
-                if (displayedGroup) {
-                  await postEditedGroup(
-                    displayedGroup.group_id,
-                    displayedGroupNameInput,
-                    displayedGroupColorInput
-                  );
-                }
-                setIsOpen(false);
-                fetchGroupList();
-              }}
-            >
-              Uložit
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <div className="styled_table">
+        <table>
+          <thead>
+            <tr>
+              <td>Barva</td>
+              <td>Název</td>
+              <td>Senzory</td>
+              <td></td>
+            </tr>
+          </thead>
+          <tbody>
+            {localGroupList.map((group, idx) => {
+              return (
+                <GroupRow
+                  groupId={group.group_id}
+                  groupColor={group.group_color}
+                  groupName={group.group_name}
+                  removeGroup={removeGroup}
+                  sensors={group.sensors}
+                  openModal={() => {
+                    const g =
+                      data.groupList.find(
+                        (g) => g.group_id === group.group_id
+                      ) || null;
+                    setDisplayedGroup(g);
+                    setModalIsOpen(true);
+                  }}
+                  key={idx}
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {displayedGroup && (
+        <GroupModal
+          isOpen={modalIsOpen}
+          setIsOpen={setModalIsOpen}
+          displayedGroup={displayedGroup}
+        />
+      )}
     </>
   );
 }

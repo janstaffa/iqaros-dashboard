@@ -1,5 +1,5 @@
-import { FaEye } from 'react-icons/fa';
 import { GrStatusGoodSmall } from 'react-icons/gr';
+import { MdRemoveRedEye } from 'react-icons/md';
 import {
   BAD_SIGNAL_THRESHOLD,
   GOOD_SIGNAL_THRESHOLD,
@@ -74,7 +74,7 @@ function SensorCard({ sensor, openModal }: SensorCardProps) {
       : 'red';
 
   return (
-    <tr className="table_row">
+    <tr>
       <td style={{ color: statusDisplayColor }}>
         <GrStatusGoodSmall title={statusDisplayTitle} />
       </td>
@@ -89,8 +89,8 @@ function SensorCard({ sensor, openModal }: SensorCardProps) {
       <td style={{ color: signalColor }}>
         {formatSensorData(sensorDataObject, DisplayParameter.RSSI)}
       </td>
-      <td className="table_row_options">
-        <FaEye
+      <td className="row_options">
+        <MdRemoveRedEye
           title="Zobrazit detaily"
           onClick={openModal}
           style={{ cursor: 'pointer', fontSize: 26 }}

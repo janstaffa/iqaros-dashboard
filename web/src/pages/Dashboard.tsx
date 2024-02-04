@@ -1,9 +1,8 @@
 import { useContext, useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
-import { FaGear } from 'react-icons/fa6';
-import { MdAdd } from 'react-icons/md';
+import { MdAdd, MdSettings } from 'react-icons/md';
 import Modal from 'react-modal';
-import { DataContext, FunctionContext } from '../App';
+import { DataContext } from '../App';
 import DashboardTile from '../components/DashboardTile';
 
 import {
@@ -26,7 +25,6 @@ import {
 
 function Dashboard() {
   const data = useContext(DataContext);
-  const functions = useContext(FunctionContext);
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
@@ -66,6 +64,7 @@ function Dashboard() {
   const [sensorData, setSensorData] = useState<FetchDataDataWrapped | null>(
     null
   );
+
   function fetchSensorData(sensorIds: number[]) {
     let query = `?sensorId=${sensorIds.join(',')}`;
 
@@ -81,13 +80,39 @@ function Dashboard() {
   }
 
   useEffect(() => {
-    functions.fetchSensorList();
-    functions.fetchGroupList();
     fetchTileList();
-  }, [functions]);
+  }, []);
+
   useEffect(() => {
     if (!data.sensorList) return;
+    // let sensorIds: number[] = [];
+    // for (const t of tileList) {
+    //   if (t.arg1_type === TileArgumentType.Sensor) {
+    //     if (!sensorIds.includes(t.arg1)) sensorIds.push(t.arg1);
+    //   } else {
+    //     const group = data.groupList.find((g) => g.group_id === t.arg1);
+    //     if (group) {
+    //       for (const s of group.sensors) {
+    //         if (!sensorIds.includes(s.sensor_id)) sensorIds.push(s.sensor_id);
+    //       }
+    //     }
+    //   }
+    //   if (t.arg2 !== null && t.arg2_type !== null) {
+    //     if (t.arg2_type === TileArgumentType.Sensor) {
+    //       if (!sensorIds.includes(t.arg2)) sensorIds.push(t.arg2);
+    //     } else {
+    //       const group = data.groupList.find((g) => g.group_id === t.arg2);
+    //       if (group) {
+    //         for (const s of group.sensors) {
+    //           if (!sensorIds.includes(s.sensor_id)) sensorIds.push(s.sensor_id);
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     const sensorIds = data.sensorList.map((s) => s.sensor_id);
+
+    if (sensorIds.length === 0) return;
     fetchSensorData(sensorIds);
 
     const poll = setInterval(() => fetchSensorData(sensorIds), POLING_INTERVAL);
@@ -169,44 +194,42 @@ function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   return (
     <>
-      <div className="dashboard_wrap">
-        <div className="dashboard_header">
-          <button
-            onClick={() => {
-              setModalIsOpen(true);
-              setTileTitle("");
-              setArgument1(null);
-              setArgument1Value(null);
-              setArgument2(null);
-              setArgument2Value(null);
-              setOperation(null);
-              setParameter(null);
-            }}
-            title="Nová dlaždice"
-          >
-            <MdAdd />
-          </button>
-          <button
-            onClick={() => {
-              setIsEditing(!isEditing);
-            }}
-          >
-            <FaGear />
-          </button>
-        </div>
-        <div className={'dashboard' + (isEditing ? ' editing' : '')}>
-          {sensorData &&
-            tileList.map((t, idx) => (
-              <DashboardTile
-                tile={t}
-                sensorData={sensorData}
-                groupList={data.groupList}
-                isEditing={isEditing}
-                remove={() => removeTile(t.ID)}
-                key={idx}
-              />
-            ))}
-        </div>
+      <div className="floating_buttons">
+        <button
+          onClick={() => {
+            setIsEditing(!isEditing);
+          }}
+        >
+          <MdSettings />
+        </button>
+        <button
+          onClick={() => {
+            setModalIsOpen(true);
+            setTileTitle('');
+            setArgument1(null);
+            setArgument1Value(null);
+            setArgument2(null);
+            setArgument2Value(null);
+            setOperation(null);
+            setParameter(null);
+          }}
+          title="Nová dlaždice"
+        >
+          <MdAdd />
+        </button>
+      </div>
+      <div className={'dashboard' + (isEditing ? ' editing' : '')}>
+        {sensorData &&
+          tileList.map((t, idx) => (
+            <DashboardTile
+              tile={t}
+              sensorData={sensorData}
+              groupList={data.groupList}
+              isEditing={isEditing}
+              remove={() => removeTile(t.ID)}
+              key={idx}
+            />
+          ))}
       </div>
       <Modal
         isOpen={modalIsOpen}

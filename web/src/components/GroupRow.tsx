@@ -1,5 +1,5 @@
-import { FaEdit, FaTrash } from 'react-icons/fa';
 import { GrStatusGoodSmall } from 'react-icons/gr';
+import { MdDelete, MdEdit } from 'react-icons/md';
 import { BaseSensor } from '../types';
 
 interface GroupRowProps {
@@ -19,14 +19,14 @@ function GroupRow({
   openModal,
 }: GroupRowProps) {
   return (
-    <tr className="table_row">
+    <tr>
       <td style={{ color: groupColor }}>
         <GrStatusGoodSmall size={25} />
       </td>
       <td>{groupName}</td>
       <td>{sensors.map(s => s.sensor_name).join(", ")}</td>
-      <td className="table_row_options">
-        <FaTrash
+      <td className="row_options">
+        <MdDelete 
           onClick={() => {
             const prompt = window.confirm(
               `Opravdu si přejete smazat skupinu ${groupName}?`
@@ -36,7 +36,7 @@ function GroupRow({
           }}
           title="Smazat skupinu"
         />
-        <FaEdit onClick={openModal} title="Upravit skupinu" />
+        <MdEdit onClick={openModal} title="Upravit skupinu" />
       </td>
     </tr>
   );

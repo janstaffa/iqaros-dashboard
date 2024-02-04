@@ -163,3 +163,8 @@ export interface Tile {
 export interface TileListApiResponse extends GenericApiResponse {
   data: Tile[];
 }
+
+export interface ChartedSensor {
+  sensor_id: number;
+  parameter: DataParameter;
+}

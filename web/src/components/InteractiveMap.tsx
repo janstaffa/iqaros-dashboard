@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MdZoomIn, MdZoomOut } from 'react-icons/md';
+import { Bars } from 'react-loader-spinner';
 import {
   APP_API_BASE_PATH,
   COLOR_SCHEME_TABLES,
@@ -26,12 +27,13 @@ import {
 import DisplayedSensorSVG from './DisplayedSensorSVG';
 
 export interface InteractiveMapProps {
-  map: SensorMap;
+  map: SensorMap | null;
   displayedSensors?: DisplayedSensor[];
   displayParameter: DisplayParameter;
   colorScheme?: MapColorScheme;
   moveSensor?: (sensorId: number, newX: number, newY: number) => void;
   handleSensorClick?: (sensorId: number) => void;
+  isLoading?: boolean;
 }
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -41,6 +43,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   colorScheme,
   moveSensor,
   handleSensorClick,
+  isLoading = false,
 }) => {
   const isEditable = moveSensor !== undefined;
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -65,6 +68,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
 
   useEffect(() => {
+    if (map === null) return;
     const containerWidth = mapRef.current!.clientWidth;
     setMapZoom(computeZoomFactor(map.image_width, containerWidth));
   }, [map]);
@@ -83,7 +87,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       for (const s of displayedSensors) {
         colors[s.sensor.sensor_id] = 'black';
       }
-      setSensorColors(colors);
+      // setSensorColors(colors);
       return;
     }
     const flatValues = displayedSensors
@@ -130,6 +134,21 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     setSensorColors(colorGradient);
   }, [displayedSensors, displayParameter, colorScheme]);
 
+  if (isLoading)
+    return (
+      <div className='interactive_map_wrap'>
+        <Bars
+          height="80"
+          width="80"
+          color="#11547a"
+          ariaLabel="Loading..."
+          wrapperStyle={{}}
+          wrapperClass="loader"
+          visible={true}
+        />
+      </div>
+    );
+  if (!map) return null;
   return (
     <div className="interactive_map_wrap">
       <div className="interactive_map_controls">
@@ -222,7 +241,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </svg>
         <img
           src={APP_API_BASE_PATH + '/mapimage/' + map.map_id}
-          alt=""
+          alt="Map"
           width={map.image_width * mapZoom}
           height={map.image_height * mapZoom}
         />

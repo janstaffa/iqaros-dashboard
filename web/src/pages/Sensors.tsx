@@ -1,32 +1,16 @@
 import { useContext, useEffect, useState } from 'react';
 import { FaSort, FaSortDown, FaSortUp } from 'react-icons/fa';
-import { DataContext, FunctionContext } from '../App';
+import { DataContext } from '../App';
 import SensorModal from '../components/Modals/SensorModal';
 import SensorRow from '../components/SensorRow';
-import { POOLING_INTERVAL } from '../constants';
 import { Sensor, Sort, SortHead, SortOptions } from '../types';
 
 function Sensors() {
   const data = useContext(DataContext);
-  const functions = useContext(FunctionContext);
 
   const [sortedSensorList, setSortedSensorList] = useState<Sensor[] | null>(
     null
   );
-
-  useEffect(() => {
-    functions.fetchSensorList();
-    functions.fetchGroupList();
-
-    const poolingLoop = setInterval(
-      functions.fetchSensorList,
-      POOLING_INTERVAL
-    );
-
-    return () => {
-      clearInterval(poolingLoop);
-    };
-  }, [functions]);
 
   const sortHead: (SortHead | null)[] = [
     null,
@@ -61,7 +45,6 @@ function Sensors() {
 
   useEffect(() => {
     const sorted = [...data.sensorList];
-    console.log(data.sensorList);
 
     if (sortOptions.sort !== Sort.None)
       sorted.sort((a, b) => {
@@ -87,8 +70,8 @@ function Sensors() {
 
   return (
     <>
-      <div className="sensor_list_wrap">
-        <table className="styled_table">
+      <div className="styled_table">
+        <table>
           <thead>
             <tr>
               {sortHead.map((sh, i) => (
@@ -123,10 +106,10 @@ function Sensors() {
                       ) : sortOptions.sort === Sort.Descending ? (
                         <FaSortDown />
                       ) : (
-                        <FaSort />
+                        <FaSort className="sort_hidden" />
                       )
                     ) : (
-                      <FaSort />
+                      <FaSort className="sort_hidden" />
                     ))}
                 </td>
               ))}

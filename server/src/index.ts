@@ -13,7 +13,6 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 
 import fileUpload from 'express-fileupload';
-import { WebSocketServer } from 'ws';
 import { appApiController } from './rest/appApiController';
 import { sensorApiController } from './rest/sensorApiController';
 import { IQAROS_Response } from './types';
@@ -59,19 +58,6 @@ const db = new sqlite.Database(DB_FILE, (error) => {
 
   app.listen(port, () => {
     console.log(`Listening on port ${port}`);
-  });
-
-  const wss = new WebSocketServer({
-    port: 4040,
-  });
-
-  wss.on('connection', function connection(ws) {
-    console.log('WS client connected');
-    ws.on('error', console.error);
-
-    ws.on('message', function message(data) {
-      console.log('received: %s', data);
-    });
   });
 
   // MQTT Client

@@ -78,6 +78,9 @@ export function displayParameterToName(value: DisplayParameter) {
   return names[value];
 }
 
+export const dataParameterToName = (dp: DataParameter) =>
+  displayParameterToName(dp + 1);
+
 export function removeGaps(data: FetchData): FetchData | undefined {
   if (!data) return;
   let values = [];
@@ -151,4 +154,17 @@ export function getColorGradient(color1: string, color2: string, i: number) {
     ('00' + newG.toString(16)).slice(-2) +
     ('00' + newB.toString(16)).slice(-2)
   );
+}
+
+export function getColorByParameter(dp: DataParameter) {
+  switch (dp) {
+    case DataParameter.Temperature:
+      return '#f5254e';
+    case DataParameter.Humidity:
+      return '#004bd6';
+    case DataParameter.RSSI:
+      return '#39e363';
+    case DataParameter.Voltage:
+      return '#f2dc50';
+  }
 }
