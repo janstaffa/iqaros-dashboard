@@ -1,5 +1,11 @@
-import { SENSOR_ADDRESS_RANGE_OFFSET } from './constants';
-import { MQTTSensorData, SensorData, SensorDataParameter } from './types';
+import { DATA_PARAMETER_KEYS, SENSOR_ADDRESS_RANGE_OFFSET } from './constants';
+import {
+  FetchDataData,
+  MQTTSensorData,
+  SensorData,
+  SensorDataAll,
+  SensorDataParameter,
+} from './types';
 
 function getParameter(parameterStr: string): SensorDataParameter | null {
   switch (parameterStr) {
@@ -9,10 +15,8 @@ function getParameter(parameterStr: string): SensorDataParameter | null {
       return SensorDataParameter.Humidity;
     case 'RSSI':
       return SensorDataParameter.RSSI;
-    case 'VOLTAGE':
-      return SensorDataParameter.Voltage;
     case 'EXTRA_LOW_VOLTAGE':
-      return SensorDataParameter.ExtraLowVoltage;
+      return SensorDataParameter.Voltage;
   }
   return null;
 }
@@ -34,3 +38,28 @@ export function parseSensor(MQTTsensorData: MQTTSensorData): SensorData {
 
   return sensorData;
 }
+
+export function dataParameterToKey(value: SensorDataParameter) {
+  return DATA_PARAMETER_KEYS[value];
+}
+
+export const DataAllToFetchData = (
+  data: SensorDataAll | undefined
+): FetchDataData => ({
+  temperature: {
+    values: data?.temperature.value ? [data.temperature.value] : [],
+    timestamps: data?.temperature.timestamp ? [data.temperature.timestamp] : [],
+  },
+  humidity: {
+    values: data?.humidity.value ? [data.humidity.value] : [],
+    timestamps: data?.humidity.timestamp ? [data.humidity.timestamp] : [],
+  },
+  rssi: {
+    values: data?.rssi.value ? [data.rssi.value] : [],
+    timestamps: data?.rssi.timestamp ? [data.rssi.timestamp] : [],
+  },
+  voltage: {
+    values: data?.voltage.value ? [data.voltage.value] : [],
+    timestamps: data?.voltage.timestamp ? [data.voltage.timestamp] : [],
+  },
+});

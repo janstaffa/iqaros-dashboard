@@ -91,10 +91,10 @@ const DashboardTile: React.FC<TileProps> = ({
   }
 
   let display = NOT_AVAILABLE_TEXT;
-  if (d1 !== null) {
+  if (d1 !== null && !Number.isNaN(d1)) {
     if (tile.operation === TileOperation.Display) {
       display = formatSensorValue(d1, tile.parameter);
-    } else if (tile.operation === TileOperation.Difference && d2 !== null) {
+    } else if (tile.operation === TileOperation.Difference && d2 !== null && !Number.isNaN(d2)) {
       const v = d1 - d2;
       display = formatSensorValue(v, tile.parameter);
     }

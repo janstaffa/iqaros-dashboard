@@ -4,7 +4,13 @@ import path from 'path';
 import sharp from 'sharp';
 import sqlite from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
-import { MAP_DIRECTORY_PATH, NEW_GROUP_NAME_TEMPLATE } from '../constants';
+import { redisClient } from '..';
+import {
+  DATA_PARAMETER_KEYS,
+  MAP_DIRECTORY_PATH,
+  NEW_GROUP_NAME_TEMPLATE,
+  getFullRedisLatestDataKey,
+} from '../constants';
 import { DashboardTilesDBObject, MapsDBObject, SensorDataAll } from '../types';
 import { auth, generateRandomColor } from './utils';
 
@@ -36,55 +42,39 @@ export function appApiController(app: Express, db: sqlite.Database) {
             );
           });
 
-          // Get latest data
-          const sensorData = await new Promise<SensorDataAll>((res, rej) => {
-            db.all(
-              `SELECT temp.value AS temperature, temp.timestamp AS temperature_timestamp, humidity.value AS humidity, humidity.timestamp AS humidity_timestamp, rssi.value AS rssi, rssi.timestamp AS rssi_timestamp, voltage.value AS voltage, voltage.timestamp AS voltage_timestamp
-              FROM
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 0 ORDER BY timestamp DESC LIMIT 1) temp
-                FULL JOIN
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 1 ORDER BY timestamp DESC LIMIT 1) humidity
-                FULL JOIN
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 2 ORDER BY timestamp DESC LIMIT 1) rssi
-                FULL JOIN
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 4 ORDER BY timestamp DESC LIMIT 1) voltage`,
-              // ON (temp.sensor_id = humidity.sensor_id AND humidity.sensor_id = rssi.sensor_id AND rss.sensor_id = voltage.sensor_id);`,
-              [sensorId, sensorId, sensorId, sensorId],
-              (err, data) => {
-                if (err) return rej(err);
-                if (data.length === 0) return rej();
-                const {
-                  temperature,
-                  temperature_timestamp,
-                  humidity,
-                  humidity_timestamp,
-                  rssi,
-                  rssi_timestamp,
-                  voltage,
-                  voltage_timestamp,
-                } = data[0] as any;
+          const sensorData: SensorDataAll = {
+            temperature: {
+              value: null,
+              timestamp: null,
+            },
+            humidity: {
+              value: null,
+              timestamp: null,
+            },
+            rssi: {
+              value: null,
+              timestamp: null,
+            },
+            voltage: {
+              value: null,
+              timestamp: null,
+            },
+          };
 
-                res({
-                  temperature: {
-                    value: temperature,
-                    timestamp: temperature_timestamp,
-                  },
-                  humidity: {
-                    value: humidity,
-                    timestamp: humidity_timestamp,
-                  },
-                  rssi: {
-                    value: rssi,
-                    timestamp: rssi_timestamp,
-                  },
-                  voltage: {
-                    value: voltage,
-                    timestamp: voltage_timestamp,
-                  },
-                });
-              }
-            );
-          }).catch((e) => console.error(e));
+          // Get latest data
+          for (const key of DATA_PARAMETER_KEYS) {
+            const redisKey = getFullRedisLatestDataKey(sensorId, key);
+            const latestData = await redisClient.hGetAll(redisKey);
+            if (
+              latestData.value !== undefined &&
+              latestData.timestamp !== undefined
+            ) {
+              sensorData[key] = {
+                value: parseFloat(latestData.value),
+                timestamp: parseInt(latestData.timestamp),
+              };
+            }
+          }
 
           const sensorObj = {
             ...row,
@@ -181,34 +171,37 @@ export function appApiController(app: Express, db: sqlite.Database) {
 
   app.get('/app/grouplist', (req, res) => {
     try {
-      db.all('SELECT * FROM sensor_groups ORDER BY group_name;', async (err, rows: any) => {
-        const groups: any[] = [];
+      db.all(
+        'SELECT * FROM sensor_groups ORDER BY group_name;',
+        async (err, rows: any) => {
+          const groups: any[] = [];
 
-        for (const row of rows) {
-          const sensors = await new Promise<[]>((res, rej) => {
-            db.all(
-              `SELECT sensors.sensor_id AS sensor_id, sensors.network_id as network_id, sensors.sensor_name AS sensor_name
+          for (const row of rows) {
+            const sensors = await new Promise<[]>((res, rej) => {
+              db.all(
+                `SELECT sensors.sensor_id AS sensor_id, sensors.network_id as network_id, sensors.sensor_name AS sensor_name
 			   FROM sensors_in_groups
 			   INNER JOIN sensors
 			   	ON sensors_in_groups.sensor_id = sensors.sensor_id
 			   WHERE sensors_in_groups.group_id = ?`,
-              row['group_id'],
-              (err, rows2: any) => {
-                if (err) return rej(err);
-                res(rows2);
-              }
-            );
-          });
-          const group_data = { ...row, sensors };
-          groups.push(group_data);
-        }
-        const response = {
-          status: 'ok',
-          data: groups,
-        };
+                row['group_id'],
+                (err, rows2: any) => {
+                  if (err) return rej(err);
+                  res(rows2);
+                }
+              );
+            });
+            const group_data = { ...row, sensors };
+            groups.push(group_data);
+          }
+          const response = {
+            status: 'ok',
+            data: groups,
+          };
 
-        res.json(response);
-      });
+          res.json(response);
+        }
+      );
       return;
     } catch (e) {
       return res.json({ status: 'err', message: e });
@@ -263,10 +256,10 @@ export function appApiController(app: Express, db: sqlite.Database) {
         newColor,
         groupId,
         (err: any, rows: any) => {
-          if (err)  {
+          if (err) {
             console.log(err);
-            res.json({ status: 'err', message: "Failed to update group" })
-          };
+            res.json({ status: 'err', message: 'Failed to update group' });
+          }
           res.json({
             status: 'ok',
             data: { ...rows[0] },
@@ -396,56 +389,43 @@ export function appApiController(app: Express, db: sqlite.Database) {
                   if (err) return rej(err);
 
                   const restructuredSensors = sensors.map(async (s) => {
-                    const sensorData = await new Promise<SensorDataAll | null>(
-                      (res, rej) =>
-                        db.all(
-                          `SELECT temp.value AS temperature, temp.timestamp AS temperature_timestamp, humidity.value AS humidity, humidity.timestamp AS humidity_timestamp, rssi.value AS rssi, rssi.timestamp AS rssi_timestamp, voltage.value AS voltage, voltage.timestamp AS voltage_timestamp
-                    FROM
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 0 ORDER BY timestamp DESC LIMIT 1) temp
-                      FULL JOIN
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 1 ORDER BY timestamp DESC LIMIT 1) humidity
-                      FULL JOIN
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 2 ORDER BY timestamp DESC LIMIT 1) rssi
-                      FULL JOIN
-                    (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 4 ORDER BY timestamp DESC LIMIT 1) voltage`,
-                          // ON (temp.sensor_id = humidity.sensor_id AND humidity.sensor_id = rssi.sensor_id AND rss.sensor_id = voltage.sensor_id);`,
-                          [s.sensor_id, s.sensor_id, s.sensor_id, s.sensor_id],
-                          (err, data) => {
-                            if (err) return rej(err);
+                    const sensorData: SensorDataAll = {
+                      temperature: {
+                        value: null,
+                        timestamp: null,
+                      },
+                      humidity: {
+                        value: null,
+                        timestamp: null,
+                      },
+                      rssi: {
+                        value: null,
+                        timestamp: null,
+                      },
+                      voltage: {
+                        value: null,
+                        timestamp: null,
+                      },
+                    };
 
-                            if (data.length === 0) return res(null);
-                            const {
-                              temperature,
-                              temperature_timestamp,
-                              humidity,
-                              humidity_timestamp,
-                              rssi,
-                              rssi_timestamp,
-                              voltage,
-                              voltage_timestamp,
-                            } = data[0] as any;
+                    // Get latest data
+                    for (const key of DATA_PARAMETER_KEYS) {
+                      const redisKey = getFullRedisLatestDataKey(
+                        s.sensor_id,
+                        key
+                      );
+                      const latestData = await redisClient.hGetAll(redisKey);
+                      if (
+                        latestData.value !== undefined &&
+                        latestData.timestamp !== undefined
+                      ) {
+                        sensorData[key] = {
+                          value: parseFloat(latestData.value),
+                          timestamp: parseInt(latestData.timestamp),
+                        };
+                      }
+                    }
 
-                            res({
-                              temperature: {
-                                value: temperature,
-                                timestamp: temperature_timestamp,
-                              },
-                              humidity: {
-                                value: humidity,
-                                timestamp: humidity_timestamp,
-                              },
-                              rssi: {
-                                value: rssi,
-                                timestamp: rssi_timestamp,
-                              },
-                              voltage: {
-                                value: voltage,
-                                timestamp: voltage_timestamp,
-                              },
-                            });
-                          }
-                        )
-                    );
                     return {
                       sensor: {
                         sensor_id: s['sensor_id'],

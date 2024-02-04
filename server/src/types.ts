@@ -45,7 +45,6 @@ export enum SensorDataParameter {
   Humidity,
   RSSI,
   Voltage,
-  ExtraLowVoltage,
 }
 export interface SensorData {
   sensorId: number;
@@ -87,8 +86,8 @@ export interface SensorDataAll {
 }
 
 export interface SensorDataPayload {
-  value: number;
-  timestamp: number;
+  value: number | null;
+  timestamp: number | null;
 }
 
 export interface SensorDataDBObject {
@@ -123,3 +122,5 @@ export interface DashboardTilesDBObject {
   operation: number;
   parameter: number;
 }
+
+export type SensorDataMap = { [sensorId: string]: SensorDataAll };

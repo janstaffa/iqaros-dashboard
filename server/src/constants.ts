@@ -22,3 +22,16 @@ export const RANDOM_GROUP_COLORS = [
 export const MAX_FILE_UPLOAD_SIZE = 1024 * 1024 * 50; // 50 megabytes
 export const FILEUPLOAD_DIRECTORY_PATH = './userdata/upload';
 export const MAP_DIRECTORY_PATH = FILEUPLOAD_DIRECTORY_PATH + '/maps';
+
+export const REDIS_LATEST_DATA_KEY = 'latest-data';
+export const getFullRedisLatestDataKey = (
+  sensorId: number,
+  parameterKey: string
+) => `${REDIS_LATEST_DATA_KEY}:${sensorId}:${parameterKey}`;
+
+export const DATA_PARAMETER_KEYS: (
+  | 'temperature'
+  | 'humidity'
+  | 'rssi'
+  | 'voltage'
+)[] = ['temperature', 'humidity', 'rssi', 'voltage'];

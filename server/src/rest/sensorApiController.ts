@@ -1,12 +1,14 @@
 import { Express } from 'express';
 import sqlite from 'sqlite3';
+import { redisClient } from '..';
+import { DATA_PARAMETER_KEYS, getFullRedisLatestDataKey } from '../constants';
 import {
   FetchDataData,
   SensorDataDBObject,
   SensorDataParameter,
 } from '../types';
 
-export function sensorApiController(app: Express, db: sqlite.Database) {
+export async function sensorApiController(app: Express, db: sqlite.Database) {
   app.get('/api/sensorlist', (req, res) => {
     db.all('SELECT * FROM sensors', async (err, rows: any) => {
       const sensors: any[] = [];
@@ -79,56 +81,38 @@ export function sensorApiController(app: Express, db: sqlite.Database) {
         const d: { [key: string]: FetchDataData } = {};
 
         for (const sId of parsedSensorIds) {
-          await new Promise((res, rej) =>
-            db.all(
-              `SELECT temp.value AS temperature, temp.timestamp AS temperature_timestamp, humidity.value AS humidity, humidity.timestamp AS humidity_timestamp, rssi.value AS rssi, rssi.timestamp AS rssi_timestamp, voltage.value AS voltage, voltage.timestamp AS voltage_timestamp
-              FROM
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 0 ORDER BY timestamp DESC LIMIT 1) temp
-                FULL JOIN
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 1 ORDER BY timestamp DESC LIMIT 1) humidity
-                FULL JOIN
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 2 ORDER BY timestamp DESC LIMIT 1) rssi
-                FULL JOIN
-              (SELECT value, timestamp FROM sensor_data WHERE sensor_id = ? AND parameter = 4 ORDER BY timestamp DESC LIMIT 1) voltage`,
-              // ON (temp.sensor_id = humidity.sensor_id AND humidity.sensor_id = rssi.sensor_id AND rss.sensor_id = voltage.sensor_id);`,
-              [sId, sId, sId, sId],
-              (err, data) => {
-                if (err) return rej(err);
+          d[sId.toString()] = {
+            temperature: {
+              values: [],
+              timestamps: [],
+            },
+            humidity: {
+              values: [],
+              timestamps: [],
+            },
+            rssi: {
+              values: [],
+              timestamps: [],
+            },
+            voltage: {
+              values: [],
+              timestamps: [],
+            },
+          };
 
-                if (data.length === 0) return res(null);
-                const {
-                  temperature,
-                  temperature_timestamp,
-                  humidity,
-                  humidity_timestamp,
-                  rssi,
-                  rssi_timestamp,
-                  voltage,
-                  voltage_timestamp,
-                } = data[0] as any;
-
-                d[sId.toString()] = {
-                  temperature: {
-                    values: [temperature],
-                    timestamps: [temperature_timestamp],
-                  },
-                  humidity: {
-                    values: [humidity],
-                    timestamps: [humidity_timestamp],
-                  },
-                  rssi: {
-                    values: [rssi],
-                    timestamps: [rssi_timestamp],
-                  },
-                  voltage: {
-                    values: [voltage],
-                    timestamps: [voltage_timestamp],
-                  },
-                };
-                res(null);
-              }
-            )
-          );
+          for (const key of DATA_PARAMETER_KEYS) {
+            const redisKey = getFullRedisLatestDataKey(sId, key);
+            const sensorData = await redisClient.hGetAll(redisKey);
+            if (
+              sensorData.value !== undefined &&
+              sensorData.timestamp !== undefined
+            ) {
+              d[sId.toString()][key] = {
+                values: [parseFloat(sensorData.value)],
+                timestamps: [parseInt(sensorData.timestamp)],
+              };
+            }
+          }
         }
         return res.send({ status: 'ok', data: d });
       }
@@ -204,7 +188,7 @@ export function sensorApiController(app: Express, db: sqlite.Database) {
                     case SensorDataParameter.RSSI:
                       push = temp.rssi;
                       break;
-                    case SensorDataParameter.ExtraLowVoltage:
+                    case SensorDataParameter.Voltage:
                       push = temp.voltage;
                       break;
                   }
