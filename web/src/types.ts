@@ -167,4 +167,10 @@ export interface TileListApiResponse extends GenericApiResponse {
 export interface ChartedSensor {
   sensor_id: number;
   parameter: DataParameter;
+  color: string;
 }
+
+// bounds = 'timestamp_from-timestamp_to'
+export type SensorDataCache = {
+  [bounds: string]: FetchDataDataWrapped;
+};

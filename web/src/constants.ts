@@ -49,11 +49,11 @@ export const TEMPERATURE_COLOR_TABLE: [number, string][] = [
 ];
 
 export const HUMIDITY_COLOR_TABLE: [number, string][] = [
-  [20, '#fa0202'],
-  [30, '#ff6666'],
-  [50, '#e08f80'],
-  [70, '#5db5fc'],
-  [100, '#0373fc'],
+  [20, '#fc9f9f'],
+  [30, '#fcc5c5'],
+  [50, '#bedcfa'],
+  [70, '#6094fc'],
+  [100, '#1966ff'],
 ];
 
 export const RSSI_COLOR_TABLE: [number, string][] = [

@@ -632,3 +632,12 @@ label {
   overflow-x: hidden;
   overflow-y: auto;
 }
+
+.clickable_status {
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.clickable_status:hover {
+  border: 2px solid black;
+}

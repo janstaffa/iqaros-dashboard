@@ -10,7 +10,10 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Nav from './Nav';
-import { APP_API_BASE_PATH, POOLING_INTERVAL } from './constants';
+import {
+  APP_API_BASE_PATH,
+  POOLING_INTERVAL
+} from './constants';
 import Chart from './pages/Chart';
 import Dashboard from './pages/Dashboard';
 import Docs from './pages/Docs';
@@ -21,7 +24,7 @@ import {
   GroupListApiResponse,
   Sensor,
   SensorGroup,
-  SensorListApiResponse,
+  SensorListApiResponse
 } from './types';
 
 interface DataContextType {
@@ -84,6 +87,24 @@ function App() {
         throw e;
       });
   }, []);
+
+  // const [cachedSensorData, setCachedSensorData] = useState<SensorDataCache>({});
+
+  // function fetchSensorData(sensorIds: number[], from?: number, to?: number) {
+  //   let query = `?sensorId=${sensorIds.join(',')}`;
+  //   if (from !== undefined) query += `&from=${from}`;
+  //   if (from !== undefined && to !== undefined) query += `&to=${to}`;
+
+  //   return fetch(API_BASE_PATH + '/fetchdata' + query)
+  //     .then((data) => data.json())
+  //     .then((parsed_data) => {
+  //       const response = parsed_data as FetchDataApiResponse;
+  //       setCachedSensorData();
+  //     })
+  //     .catch((e) => {
+  //       throw e;
+  //     });
+  // }
 
   useEffect(() => {
     setLoaderVisible(sensorListLoading || groupListLoading);

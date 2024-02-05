@@ -76,6 +76,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   type SensorColors = {
     [sensorId: number]: string;
   };
+
   const [sensorColors, setSensorColors] = useState<SensorColors>({});
 
   useEffect(() => {
@@ -87,9 +88,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       for (const s of displayedSensors) {
         colors[s.sensor.sensor_id] = 'black';
       }
-      // setSensorColors(colors);
+      setSensorColors(colors);
       return;
     }
+
     const flatValues = displayedSensors
       .filter((s) => s.data !== undefined)
       .map((s) => getSensorValue(s.data!, displayParameter));
@@ -136,7 +138,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   if (isLoading)
     return (
-      <div className='interactive_map_wrap'>
+      <div className="interactive_map_wrap">
         <Bars
           height="80"
           width="80"

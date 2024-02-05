@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { FaHome, FaTimes } from 'react-icons/fa';
 import { GoDash } from 'react-icons/go';
 import { GrStatusGoodSmall } from 'react-icons/gr';
@@ -150,7 +150,7 @@ function Chart() {
         x: d.timestamps.map((t) => convertToISOWithTimezone(t)),
         y: d.values,
         // fill: 'toself',
-        marker: { color: getColorByParameter(s.parameter) },
+        marker: { color: s.color },
         hovertemplate: `<i>${parameterName}</i>: %{y:.2f}<br>%{x}<br>`,
         ...globalPlotOptions,
       });
@@ -169,6 +169,9 @@ function Chart() {
   const [selectedParameter, setSelectedParameter] = useState<DataParameter>(
     DataParameter.Temperature
   );
+
+  const colorPickerRef = useRef<HTMLInputElement | null>(null);
+  const [editedTrace, setEditedTrace] = useState<number | null>(null);
   return (
     <>
       <div className="page_header">
@@ -221,6 +224,7 @@ function Chart() {
               newChartedSensors.push({
                 sensor_id: selectedSensor,
                 parameter: selectedParameter,
+                color: getColorByParameter(selectedParameter),
               });
               setChartedSensors(newChartedSensors);
               window.localStorage.setItem(
@@ -379,8 +383,14 @@ function Chart() {
                   <tr key={idx}>
                     <td>
                       <GrStatusGoodSmall
+                        className="clickable_status"
                         size={25}
-                        color={getColorByParameter(s.parameter)}
+                        color={s.color}
+                        onClick={() => {
+                          if (!colorPickerRef.current) return;
+                          setEditedTrace(s.sensor_id);
+                          colorPickerRef.current.click();
+                        }}
                       />
                     </td>
                     <td>{sensor.sensor_name}</td>
@@ -415,6 +425,27 @@ function Chart() {
           </table>
         </div>
       </div>
+      <input
+        type="color"
+        hidden
+        ref={colorPickerRef}
+        onChange={(e) => {
+          if (editedTrace === null) return;
+          const newChartedSensors = [...chartedSensors];
+          const idx = newChartedSensors.findIndex(
+            (s) => s.sensor_id === editedTrace
+          );
+          if (idx !== -1) {
+            newChartedSensors[idx].color = e.target.value;
+            setChartedSensors(newChartedSensors);
+
+            window.localStorage.setItem(
+              'chartedSensors',
+              JSON.stringify(newChartedSensors)
+            );
+          }
+        }}
+      />
     </>
   );
 }
