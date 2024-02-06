@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { BallTriangle } from 'react-loader-spinner';
@@ -13,6 +14,7 @@ import Nav from './Nav';
 import {
   API_BASE_PATH,
   APP_API_BASE_PATH,
+  DATA_PARAMETER_KEYS,
   POOLING_INTERVAL,
 } from './constants';
 import Chart from './pages/Chart';
@@ -23,9 +25,11 @@ import Heatmap from './pages/Map';
 import Sensors from './pages/Sensors';
 import {
   FetchDataApiResponse,
+  FetchDataData,
   FetchDataDataWrapped,
   GroupListApiResponse,
   Sensor,
+  SensorDataCache,
   SensorGroup,
   SensorListApiResponse,
 } from './types';
@@ -39,6 +43,11 @@ interface DataContextType {
 interface FunctionContextType {
   fetchSensorList: () => void;
   fetchGroupList: () => void;
+  getSensorDataInPeriod: (
+    sensorIds: number[],
+    from: number,
+    to: number
+  ) => Promise<FetchDataDataWrapped>;
 }
 // @ts-ignore
 export const DataContext = createContext<DataContextType>();
@@ -99,7 +108,6 @@ function App() {
       });
   }, []);
 
-  // const [cachedSensorData, setCachedSensorData] = useState<SensorDataCache>({});
   const [latestSensorData, setLatestSensorData] =
     useState<FetchDataDataWrapped>({});
 
@@ -121,21 +129,89 @@ function App() {
         throw e;
       });
   }
-  // function fetchSensorData(sensorIds: number[], from?: number, to?: number) {
-  //   let query = `?sensorId=${sensorIds.join(',')}`;
-  //   if (from !== undefined) query += `&from=${from}`;
-  //   if (from !== undefined && to !== undefined) query += `&to=${to}`;
 
-  //   return fetch(API_BASE_PATH + '/fetchdata' + query)
-  //     .then((data) => data.json())
-  //     .then((parsed_data) => {
-  //       const response = parsed_data as FetchDataApiResponse;
-  //       // setCachedSensorData();
-  //     })
-  //     .catch((e) => {
-  //       throw e;
-  //     });
-  // }
+  const [cachedSensorsData, setCachedSensorsData] = useState<SensorDataCache>(
+    {}
+  );
+  const cachedSensorsRef = useRef(cachedSensorsData);
+  cachedSensorsRef.current = cachedSensorsData;
+
+  const getSensorDataInPeriod = useCallback(
+    async (sensorIds: number[], from: number, to: number) => {
+      let query = `?sensorId=${sensorIds.join(',')}&from=${from}&to=${to}`;
+
+      const cache = cachedSensorsRef.current;
+      for (const [timestamps, values] of Object.entries(cache)) {
+        const parts = timestamps.split('-');
+        const cacheFrom = parseInt(parts[0]);
+        const cacheTo = parseInt(parts[1]);
+
+        if (cacheFrom <= from && cacheTo >= to) {
+          let hasAllSensors = true;
+          for (const sId of sensorIds) {
+            const hasSensor = Object.keys(values).find(
+              (v) => parseInt(v) === sId
+            );
+            if (hasSensor === undefined) {
+              hasAllSensors = false;
+              break;
+            }
+          }
+          if (hasAllSensors) {
+            const filteredValues: FetchDataDataWrapped = {};
+            for (const [sId, data] of Object.entries(values)) {
+              const hasSensor = sensorIds.findIndex((s) => s === parseInt(sId));
+              if (hasSensor !== -1) {
+                const filteredData: { [key: string]: any } = {};
+                for (const key of DATA_PARAMETER_KEYS) {
+                  const timestamps = [];
+                  const values = [];
+                  for (const idx in data[key].timestamps) {
+                    const timestamp = data[key].timestamps[idx];
+                    const value = data[key].values[idx];
+
+                    if (timestamp >= from && timestamp <= to) {
+                      timestamps.push(timestamp);
+                      values.push(value);
+                    }
+                  }
+                  filteredData[key] = {
+                    timestamps,
+                    values,
+                  };
+                }
+                filteredValues[sId] = filteredData as FetchDataData;
+              }
+            }
+            console.log('GETTING FROM CACHE', filteredValues, cachedSensorsRef.current);
+            return filteredValues;
+          }
+        }
+      }
+      console.log('GETTING FROM SERVER');
+      // console.log(cachedSensorsData);
+      return new Promise<FetchDataDataWrapped>((res, rej) =>
+        fetch(API_BASE_PATH + '/fetchdata' + query)
+          .then((data) => data.json())
+          .then((parsed_data) => {
+            const response = parsed_data as FetchDataApiResponse;
+            const key = `${from}-${to}`;
+            const values = response.data.values;
+            setCachedSensorsData((oldCachedSensorData) => {
+              const newCachedSensorData = { ...oldCachedSensorData };
+              newCachedSensorData[key] = values;
+              return newCachedSensorData;
+            });
+            res(values);
+          })
+          .catch((e) => {
+            rej(e);
+            throw e;
+          })
+      );
+    },
+    []
+  );
 
   useEffect(() => {
     setLoaderVisible(
@@ -177,8 +253,9 @@ function App() {
     () => ({
       fetchSensorList,
       fetchGroupList,
+      getSensorDataInPeriod,
     }),
-    [fetchSensorList, fetchGroupList]
+    [fetchSensorList, fetchGroupList, getSensorDataInPeriod]
   );
 
   return (

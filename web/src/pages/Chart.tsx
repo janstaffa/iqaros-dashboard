@@ -3,7 +3,7 @@ import { FaHome, FaTimes } from 'react-icons/fa';
 import { GoDash } from 'react-icons/go';
 import { GrStatusGoodSmall } from 'react-icons/gr';
 import Plot from 'react-plotly.js';
-import { DataContext } from '../App';
+import { DataContext, FunctionContext } from '../App';
 import { API_BASE_PATH } from '../constants';
 import {
   ChartedSensor,
@@ -21,6 +21,7 @@ import {
 
 function Chart() {
   const dataProvider = useContext(DataContext);
+  const functionsProvider = useContext(FunctionContext);
 
   const [sensorData, setSensorData] = useState<FetchDataDataWrapped | null>(
     null
@@ -68,10 +69,6 @@ function Chart() {
     }
   }, []);
 
-  // useEffect(() => {
-  //   console.log(chartedSensors);
-  // }, [chartedSensors]);
-
   useEffect(() => {
     if (chartedSensors.length === 0) {
       setSensorData(null);
@@ -82,12 +79,21 @@ function Chart() {
       (val, idx) =>
         chartedSensors.findIndex((v) => v.sensor_id === val.sensor_id) === idx
     );
-    fetchSensorData(
-      sensorsWithoutDuplicates.map((s) => s.sensor_id),
-      timestampFrom,
-      timestampTo
-    );
-  }, [chartedSensors, timestampFrom, timestampTo]);
+    functionsProvider
+      .getSensorDataInPeriod(
+        sensorsWithoutDuplicates.map((s) => s.sensor_id),
+        timestampFrom,
+        timestampTo
+      )
+      .then((d) => {
+        setSensorData(d);
+      });
+    // fetchSensorData(
+    //   sensorsWithoutDuplicates.map((s) => s.sensor_id),
+    //   timestampFrom,
+    //   timestampTo
+    // );
+  }, [chartedSensors, timestampFrom, timestampTo, functionsProvider]);
 
   const [chartData, setChartData] = useState<any[]>();
 

@@ -28,14 +28,12 @@ export const NOT_AVAILABLE_TEXT = 'N/A';
 export const POOR_RESPONSE_THRESHOLD = 10 * 60 * 1000; // 10 minutes
 export const OFFLINE_THRESHOLD = 60 * 60 * 1000; // 1 hour
 
-
 // Relative color scheme
 // [from, to] ([low, high])
 export const TEMPERATURE_RELATIVE_COLORS = ['#0000ff', '#ff0000'];
 export const HUMIDITY_RELATIVE_COLORS = ['#ff0000', '#0000ff'];
 export const RSSI_RELATIVE_COLORS = ['#ff0000', '#00ff00'];
 export const VOLTAGE_RELATIVE_COLORS = ['#ff0000', '#00ff00'];
-
 
 // Absolute color scheme
 export const TEMPERATURE_COLOR_TABLE: [number, string][] = [
@@ -60,7 +58,7 @@ export const RSSI_COLOR_TABLE: [number, string][] = [
   [BAD_SIGNAL_THRESHOLD, 'red'],
   [OK_SIGNAL_THRESHOLD, 'orange'],
   [GOOD_SIGNAL_THRESHOLD, 'green'],
-  [999, 'lime']
+  [999, 'lime'],
 ];
 export const VOLTAGE_COLOR_TABLE: [number, string][] = [
   [CRITICAL_BATTERY_VOLTAGE, '#fa0202'],
@@ -73,3 +71,10 @@ export const COLOR_SCHEME_TABLES = [
   RSSI_COLOR_TABLE,
   VOLTAGE_COLOR_TABLE,
 ];
+
+export const DATA_PARAMETER_KEYS: (
+  | 'temperature'
+  | 'humidity'
+  | 'rssi'
+  | 'voltage'
+)[] = ['temperature', 'humidity', 'rssi', 'voltage'];
