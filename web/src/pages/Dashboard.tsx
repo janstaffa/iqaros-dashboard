@@ -5,15 +5,9 @@ import Modal from 'react-modal';
 import { DataContext } from '../App';
 import DashboardTile from '../components/DashboardTile';
 
-import {
-  API_BASE_PATH,
-  APP_API_BASE_PATH,
-  POOLING_INTERVAL as POLING_INTERVAL,
-} from '../constants';
+import { APP_API_BASE_PATH } from '../constants';
 import {
   DataParameter,
-  FetchDataApiResponse,
-  FetchDataDataWrapped,
   GenericApiResponse,
   Tile,
   TileArgument,
@@ -61,66 +55,9 @@ function Dashboard() {
       });
   };
 
-  const [sensorData, setSensorData] = useState<FetchDataDataWrapped | null>(
-    null
-  );
-
-  function fetchSensorData(sensorIds: number[]) {
-    let query = `?sensorId=${sensorIds.join(',')}`;
-
-    return fetch(API_BASE_PATH + '/fetchdata' + query)
-      .then((data) => data.json())
-      .then((parsed_data) => {
-        const response = parsed_data as FetchDataApiResponse;
-        setSensorData(response.data);
-      })
-      .catch((e) => {
-        throw e;
-      });
-  }
-
   useEffect(() => {
     fetchTileList();
   }, []);
-
-  useEffect(() => {
-    if (!data.sensorList) return;
-    // let sensorIds: number[] = [];
-    // for (const t of tileList) {
-    //   if (t.arg1_type === TileArgumentType.Sensor) {
-    //     if (!sensorIds.includes(t.arg1)) sensorIds.push(t.arg1);
-    //   } else {
-    //     const group = data.groupList.find((g) => g.group_id === t.arg1);
-    //     if (group) {
-    //       for (const s of group.sensors) {
-    //         if (!sensorIds.includes(s.sensor_id)) sensorIds.push(s.sensor_id);
-    //       }
-    //     }
-    //   }
-    //   if (t.arg2 !== null && t.arg2_type !== null) {
-    //     if (t.arg2_type === TileArgumentType.Sensor) {
-    //       if (!sensorIds.includes(t.arg2)) sensorIds.push(t.arg2);
-    //     } else {
-    //       const group = data.groupList.find((g) => g.group_id === t.arg2);
-    //       if (group) {
-    //         for (const s of group.sensors) {
-    //           if (!sensorIds.includes(s.sensor_id)) sensorIds.push(s.sensor_id);
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-    const sensorIds = data.sensorList.map((s) => s.sensor_id);
-
-    if (sensorIds.length === 0) return;
-    fetchSensorData(sensorIds);
-
-    const poll = setInterval(() => fetchSensorData(sensorIds), POLING_INTERVAL);
-
-    return () => {
-      clearInterval(poll);
-    };
-  }, [data]);
 
   async function postTile(
     title: string,
@@ -219,17 +156,16 @@ function Dashboard() {
         </button>
       </div>
       <div className={'dashboard' + (isEditing ? ' editing' : '')}>
-        {sensorData &&
-          tileList.map((t, idx) => (
-            <DashboardTile
-              tile={t}
-              sensorData={sensorData}
-              groupList={data.groupList}
-              isEditing={isEditing}
-              remove={() => removeTile(t.ID)}
-              key={idx}
-            />
-          ))}
+        {tileList.map((t, idx) => (
+          <DashboardTile
+            tile={t}
+            sensorData={data.latestSensorData}
+            groupList={data.groupList}
+            isEditing={isEditing}
+            remove={() => removeTile(t.ID)}
+            key={idx}
+          />
+        ))}
       </div>
       <Modal
         isOpen={modalIsOpen}

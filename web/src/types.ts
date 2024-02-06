@@ -98,7 +98,11 @@ export enum Sort {
 }
 
 export interface FetchDataApiResponse extends GenericApiResponse {
-  data: FetchDataDataWrapped;
+  data: {
+    values: FetchDataDataWrapped;
+    timestamp_from?: number;
+    timestamp_to?: number;
+  };
 }
 
 export type FetchDataDataWrapped = { [sensorId: string]: FetchDataData };

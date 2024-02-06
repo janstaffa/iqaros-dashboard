@@ -114,7 +114,7 @@ export async function sensorApiController(app: Express, db: sqlite.Database) {
             }
           }
         }
-        return res.send({ status: 'ok', data: d });
+        return res.send({ status: 'ok', data: { values: d } });
       }
 
       // Return data over period
@@ -201,7 +201,14 @@ export async function sensorApiController(app: Express, db: sqlite.Database) {
               }
             )
         );
-        return res.send({ status: 'ok', data });
+        return res.send({
+          status: 'ok',
+          data: {
+            values: data,
+            timestamp_from: realFrom,
+            timestamp_to: realTo,
+          },
+        });
       }
     } catch (e) {
       console.log(e);

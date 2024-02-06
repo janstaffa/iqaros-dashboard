@@ -11,8 +11,9 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Nav from './Nav';
 import {
+  API_BASE_PATH,
   APP_API_BASE_PATH,
-  POOLING_INTERVAL
+  POOLING_INTERVAL,
 } from './constants';
 import Chart from './pages/Chart';
 import Dashboard from './pages/Dashboard';
@@ -21,15 +22,18 @@ import Groups from './pages/Groups';
 import Heatmap from './pages/Map';
 import Sensors from './pages/Sensors';
 import {
+  FetchDataApiResponse,
+  FetchDataDataWrapped,
   GroupListApiResponse,
   Sensor,
   SensorGroup,
-  SensorListApiResponse
+  SensorListApiResponse,
 } from './types';
 
 interface DataContextType {
   sensorList: Sensor[];
   groupList: SensorGroup[];
+  latestSensorData: FetchDataDataWrapped;
 }
 
 interface FunctionContextType {
@@ -47,31 +51,38 @@ function App() {
 
   const [sensorListLoading, setSensorListLoading] = useState(false);
   const [groupListLoading, setGroupListLoading] = useState(false);
+  const [latestDataLoading, setLatestDataLoading] = useState(false);
 
   const [loaderVisible, setLoaderVisible] = useState(false);
 
-  const fetchSensorList = useCallback((inBackground: boolean = false) => {
+  const fetchSensorList = useCallback(async (inBackground: boolean = false) => {
     if (!inBackground) setSensorListLoading(true);
-    fetch(APP_API_BASE_PATH + '/sensorlist')
-      .then((data) => data.json())
-      .then((parsed_data: SensorListApiResponse) => {
-        if (parsed_data.status === 'err') throw new Error(parsed_data.message);
-        const data = parsed_data.data.map((s) => {
-          const lastMessageTimestamp = Math.max(
-            s.data.temperature.timestamp,
-            s.data.humidity.timestamp,
-            s.data.rssi.timestamp,
-            s.data.voltage.timestamp
-          );
-          s['last_response'] = lastMessageTimestamp;
-          return s;
-        });
-        setSensorList(data);
-        if (!inBackground) setSensorListLoading(false);
-      })
-      .catch((e) => {
-        throw e;
-      });
+    return new Promise<Sensor[]>((res, rej) =>
+      fetch(APP_API_BASE_PATH + '/sensorlist')
+        .then((data) => data.json())
+        .then((parsed_data: SensorListApiResponse) => {
+          if (parsed_data.status === 'err')
+            throw new Error(parsed_data.message);
+          const data = parsed_data.data.map((s) => {
+            const lastMessageTimestamp = Math.max(
+              s.data.temperature.timestamp,
+              s.data.humidity.timestamp,
+              s.data.rssi.timestamp,
+              s.data.voltage.timestamp
+            );
+            s['last_response'] = lastMessageTimestamp;
+
+            return s;
+          });
+          setSensorList(data);
+          if (!inBackground) setSensorListLoading(false);
+          res(data);
+        })
+        .catch((e) => {
+          rej(null);
+          throw e;
+        })
+    );
   }, []);
 
   const fetchGroupList = useCallback((inBackground: boolean = false) => {
@@ -89,7 +100,27 @@ function App() {
   }, []);
 
   // const [cachedSensorData, setCachedSensorData] = useState<SensorDataCache>({});
+  const [latestSensorData, setLatestSensorData] =
+    useState<FetchDataDataWrapped>({});
 
+  function fetchLatestSensorData(
+    sensorIds: number[],
+    inBackground: boolean = false
+  ) {
+    if (!inBackground) setLatestDataLoading(true);
+    let query = `?sensorId=${sensorIds.join(',')}`;
+
+    return fetch(API_BASE_PATH + '/fetchdata' + query)
+      .then((data) => data.json())
+      .then((parsed_data) => {
+        const response = parsed_data as FetchDataApiResponse;
+        setLatestSensorData(response.data.values);
+        if (!inBackground) setLatestDataLoading(false);
+      })
+      .catch((e) => {
+        throw e;
+      });
+  }
   // function fetchSensorData(sensorIds: number[], from?: number, to?: number) {
   //   let query = `?sensorId=${sensorIds.join(',')}`;
   //   if (from !== undefined) query += `&from=${from}`;
@@ -99,7 +130,7 @@ function App() {
   //     .then((data) => data.json())
   //     .then((parsed_data) => {
   //       const response = parsed_data as FetchDataApiResponse;
-  //       setCachedSensorData();
+  //       // setCachedSensorData();
   //     })
   //     .catch((e) => {
   //       throw e;
@@ -107,15 +138,24 @@ function App() {
   // }
 
   useEffect(() => {
-    setLoaderVisible(sensorListLoading || groupListLoading);
-  }, [sensorListLoading, groupListLoading]);
+    setLoaderVisible(
+      sensorListLoading || groupListLoading || latestDataLoading
+    );
+  }, [sensorListLoading, groupListLoading, latestDataLoading]);
 
   useEffect(() => {
-    fetchSensorList();
+    fetchSensorList().then((d) => {
+      fetchLatestSensorData(d.map((s) => s.sensor_id));
+    });
     fetchGroupList();
 
     const poolingLoop = setInterval(() => {
-      fetchSensorList(true);
+      fetchSensorList(true).then((d) => {
+        fetchLatestSensorData(
+          d.map((s) => s.sensor_id),
+          true
+        );
+      });
       fetchSensorList(true);
     }, POOLING_INTERVAL);
 
@@ -128,8 +168,9 @@ function App() {
     () => ({
       sensorList,
       groupList,
+      latestSensorData,
     }),
-    [sensorList, groupList]
+    [sensorList, groupList, latestSensorData]
   );
 
   const functionContextValue = useMemo(
@@ -148,15 +189,17 @@ function App() {
             <Nav />
             <main>
               <>
-                <Routes>
-                  <Route index element={<Dashboard />} />
-                  <Route path="map" element={<Heatmap />} />
-                  <Route path="sensors" element={<Sensors />} />
-                  <Route path="groups" element={<Groups />} />
-                  <Route path="chart" element={<Chart />} />
-                  <Route path="docs" element={<Docs />} />
-                  <Route path="*" element={<Dashboard />} />
-                </Routes>
+                {!loaderVisible && (
+                  <Routes>
+                    <Route index element={<Dashboard />} />
+                    <Route path="map" element={<Heatmap />} />
+                    <Route path="sensors" element={<Sensors />} />
+                    <Route path="groups" element={<Groups />} />
+                    <Route path="chart" element={<Chart />} />
+                    <Route path="docs" element={<Docs />} />
+                    <Route path="*" element={<Dashboard />} />
+                  </Routes>
+                )}
                 <BallTriangle
                   height={100}
                   width={100}

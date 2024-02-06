@@ -41,7 +41,7 @@ function Chart() {
       .then((data) => data.json())
       .then((parsed_data) => {
         const response = parsed_data as FetchDataApiResponse;
-        setSensorData(response.data);
+        setSensorData(response.data.values);
       })
       .catch((e) => {
         throw e;
