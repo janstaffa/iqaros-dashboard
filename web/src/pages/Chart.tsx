@@ -2,37 +2,19 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { FaHome, FaTimes } from 'react-icons/fa';
 import { GoDash } from 'react-icons/go';
 import { GrStatusGoodSmall } from 'react-icons/gr';
-import Plot from 'react-plotly.js';
-import { DataContext, FunctionContext } from '../App';
-import { ChartedSensor, DataParameter, FetchDataDataWrapped } from '../types';
-import {
-  convertToISOWithTimezone,
-  dataParameterToKey,
-  dataParameterToName,
-  getColorByParameter,
-  removeGaps,
-} from '../utils';
+import { DataContext } from '../App';
+import InteractivePlot from '../components/InteractivePlot';
+import { ChartedSensor, DataParameter } from '../types';
+import { dataParameterToName, getColorByParameter, getHomeTimestamp } from '../utils';
 
 function Chart() {
   const dataProvider = useContext(DataContext);
-  const functionsProvider = useContext(FunctionContext);
-
-  const [sensorData, setSensorData] = useState<FetchDataDataWrapped | null>(
-    null
-  );
 
   const [chartedSensors, setChartedSensors] = useState<ChartedSensor[]>([]);
 
-  const getHomeTimestamp = () => {
-    const now = new Date().getTime();
-    return [now - 24 * 60 * 60 * 1000, now];
-  };
-
   const defaultTimestamp = getHomeTimestamp();
-  const [timestampFrom, setTimestampFrom] = useState<number>(
-    defaultTimestamp[0]
-  );
-  const [timestampTo, setTimestampTo] = useState<number>(defaultTimestamp[1]);
+  const [dataRange, setDataRange] =
+    useState<[number, number]>(defaultTimestamp);
 
   useEffect(() => {
     const chS = window.localStorage.getItem('chartedSensors');
@@ -40,96 +22,6 @@ function Chart() {
       setChartedSensors(JSON.parse(chS));
     }
   }, []);
-
-  useEffect(() => {
-    if (chartedSensors.length === 0) {
-      setSensorData(null);
-      setChartData([]);
-      return;
-    }
-    const sensorsWithoutDuplicates = chartedSensors.filter(
-      (val, idx) =>
-        chartedSensors.findIndex((v) => v.sensor_id === val.sensor_id) === idx
-    );
-    functionsProvider
-      .getSensorDataInPeriod(
-        sensorsWithoutDuplicates.map((s) => s.sensor_id),
-        timestampFrom,
-        timestampTo
-      )
-      .then((d) => {
-        setSensorData(d);
-      });
-  }, [chartedSensors, timestampFrom, timestampTo, functionsProvider]);
-
-  const [chartData, setChartData] = useState<any[]>();
-
-  useEffect(() => {
-    if (!sensorData) return;
-
-    // const firstEntryTimestamp = Math.min(
-    //   ...temperatureData.timestamps,
-    //   ...humidityData.timestamps,
-    //   ...rssiData.timestamps,
-    //   ...voltageData.timestamps
-    // );
-    // const lastEntryTimestamp = Math.max(
-    //   ...temperatureData.timestamps,
-    //   ...humidityData.timestamps,
-    //   ...rssiData.timestamps,
-    //   ...voltageData.timestamps
-    // );
-
-    // const labels: string[] = [];
-    // const labelVals: number[] = [];
-    // const timeframe = lastEntryTimestamp - firstEntryTimestamp;
-    // const labelCount = 10;
-    // const labelLength = timeframe / labelCount;
-
-    // for (let i = 0; i < labelCount; i++) {
-    //   const labeltimestampValue = firstEntryTimestamp + i * labelLength;
-    //   const labelValue = new Date(labeltimestampValue).toISOString();
-    //   labels.push(labelValue);
-    //   labelVals.push(labeltimestampValue);
-    // }
-
-    const globalPlotOptions = {
-      type: 'scatter',
-      mode: 'lines',
-      connectgaps: false,
-    };
-
-    const traces = [];
-
-    for (const s of chartedSensors) {
-      const data = sensorData[s.sensor_id];
-      if (!data) continue;
-
-      const d = removeGaps(data[dataParameterToKey(s.parameter)]);
-      if (!d) continue;
-
-      const sensor = dataProvider.sensorList.find(
-        (sn) => sn.sensor_id === s.sensor_id
-      );
-
-      if (!sensor) continue;
-
-      const parameterName = dataParameterToName(s.parameter);
-      traces.push({
-        name: `${sensor.sensor_name}`,
-        // name: sensor.sensor_name,
-        hoverlabel: { namelength: -1 },
-        // x: temperatureData.timestamps.map(convertToISOWithTimezone),
-        x: d.timestamps.map((t) => convertToISOWithTimezone(t)),
-        y: d.values,
-        // fill: 'toself',
-        marker: { color: s.color },
-        hovertemplate: `<i>${parameterName}</i>: %{y:.2f}<br>%{x}<br>`,
-        ...globalPlotOptions,
-      });
-    }
-    setChartData(traces);
-  }, [dataProvider, sensorData, chartedSensors]);
 
   const dateForDateTimeInputValue = (datetime: number) =>
     new Date(
@@ -143,8 +35,9 @@ function Chart() {
     DataParameter.Temperature
   );
 
-  const colorPickerRef = useRef<HTMLInputElement | null>(null);
   const [editedTrace, setEditedTrace] = useState<number | null>(null);
+
+  const colorPickerRef = useRef<HTMLInputElement | null>(null);
   return (
     <>
       <div className="page_header">
@@ -212,27 +105,34 @@ function Chart() {
         <div className="page_tools">
           <input
             type="datetime-local"
-            value={dateForDateTimeInputValue(timestampFrom)}
+            value={dateForDateTimeInputValue(dataRange[0])}
             onChange={(e) =>
-              setTimestampFrom(new Date(e.target.value).getTime())
+              setDataRange((old) => [
+                new Date(e.target.value).getTime(),
+                old[1],
+              ])
             }
             max={dateForDateTimeInputValue(
-              Math.min(timestampTo, new Date().getTime())
+              Math.min(dataRange[1], new Date().getTime())
             )}
           />
           <GoDash />
           <input
             type="datetime-local"
-            value={dateForDateTimeInputValue(timestampTo)}
-            onChange={(e) => setTimestampTo(new Date(e.target.value).getTime())}
-            min={dateForDateTimeInputValue(timestampFrom)}
+            value={dateForDateTimeInputValue(dataRange[1])}
+            onChange={(e) =>
+              setDataRange((old) => [
+                old[0],
+                new Date(e.target.value).getTime(),
+              ])
+            }
+            min={dateForDateTimeInputValue(dataRange[0])}
           />
 
           <button
             onClick={() => {
               const homeTimestamp = getHomeTimestamp();
-              setTimestampFrom(homeTimestamp[0]);
-              setTimestampTo(homeTimestamp[1]);
+              setDataRange(homeTimestamp);
             }}
           >
             <FaHome size={20} />
@@ -240,109 +140,11 @@ function Chart() {
         </div>
       </div>
       <div className="chart_wrap">
-        <div className="chart">
-          {chartData && (
-            <Plot
-              onRelayout={(e) => {
-                const from = e['xaxis.range[0]'];
-                const to = e['xaxis.range[1]'];
-                if (from === undefined || to === undefined) return;
-
-                const newTimestampFrom = new Date(from).getTime();
-                const newTimestampTo = new Date(to).getTime();
-
-                setTimestampFrom(newTimestampFrom);
-                setTimestampTo(newTimestampTo);
-              }}
-              data={chartData}
-              useResizeHandler={true}
-              className={chartedSensors.length === 0 ? 'disabled' : ''}
-              layout={{
-                // title: 'Senzor 1',
-                // xaxis: { ticktext: chartLabels, tickvals: chartLabelVals },
-                xaxis: {
-                  title: 'Čas',
-                  range: [timestampFrom, timestampTo],
-                  rangeselector: {
-                    buttons: [
-                      {
-                        count: 30,
-                        label: '30m',
-                        step: 'minute',
-                        stepmode: 'backward',
-                      },
-                      {
-                        count: 1,
-                        label: '1h',
-                        step: 'hour',
-                        stepmode: 'backward',
-                      },
-                      {
-                        count: 1,
-                        label: '1d',
-                        step: 'day',
-                        stepmode: 'backward',
-                      },
-                      {
-                        count: 7,
-                        label: '7d',
-                        step: 'day',
-                        stepmode: 'backward',
-                      },
-                      {
-                        count: 14,
-                        label: '14d',
-                        step: 'day',
-                        stepmode: 'backward',
-                      },
-                      {
-                        count: 1,
-                        label: '1M',
-                        step: 'month',
-                        stepmode: 'backward',
-                      },
-                      {
-                        count: 1,
-                        label: '1Y',
-                        step: 'year',
-                        stepmode: 'backward',
-                      },
-                      { step: 'all', label: 'vše' },
-                    ],
-                  },
-                  // rangeslider: {
-                  //   range: [
-                  //     '2015-02-17',
-                  //     dateForDateTimeInputValue(new Date().getTime()),
-                  //   ],
-                  // },
-                  type: 'date',
-                },
-                yaxis: {
-                  zeroline: false,
-                  fixedrange: true,
-                  // title: displayParameterToName(displayParameter),
-                  rangemode: 'tozero',
-                },
-                dragmode: 'pan',
-                autosize: true,
-                showlegend: false,
-                // legend: {
-                //   xanchor: 'right',
-                //   bgcolor: 'rgba(255,255,255,0.8)',
-                // },
-              }}
-              config={{
-                displaylogo: false,
-                displayModeBar: false,
-                scrollZoom: true,
-                responsive: true,
-                autosizable: true,
-              }}
-              style={{ width: '100%', height: '100%' }}
-            />
-          )}
-        </div>
+        <InteractivePlot
+          chartedSensors={chartedSensors}
+          dataRange={dataRange}
+          onRangeChange={(newFrom, newTo) => setDataRange([newFrom, newTo])}
+        />
         <div className="sensor_list">
           <table>
             <tbody>

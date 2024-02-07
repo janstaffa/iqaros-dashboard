@@ -1,11 +1,18 @@
 import { useContext, useEffect, useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
 import { GrStatusGoodSmall } from 'react-icons/gr';
-import Modal from 'react-modal';
 import { toast } from 'react-toastify';
 import { DataContext, FunctionContext } from '../../App';
-import { APP_API_BASE_PATH } from '../../constants';
-import { Sensor } from '../../types';
+import { APP_API_BASE_PATH, DATA_PARAMETER_VARIANTS } from '../../constants';
+import {
+  ChartedSensor,
+  DataParameter,
+  FetchDataData,
+  GenericApiResponse,
+  Sensor,
+} from '../../types';
+import { formatSensorValue, getColorByParameter } from '../../utils';
+import CustomModal from '../CustomModal';
+import InteractivePlot from '../InteractivePlot';
 
 export interface SensorModalProps {
   isOpen: boolean;
@@ -23,10 +30,24 @@ const SensorModal: React.FC<SensorModalProps> = ({
   const [nameInput, setNameInput] = useState('');
   const [checkedGroups, setCheckedGroups] = useState<number[]>([]);
 
+  const [chartedData, setChartedData] = useState<ChartedSensor[]>([]);
+
   useEffect(() => {
+    if (!isOpen) {
+      setChartedData([]);
+      return;
+    }
+
     setNameInput(sensor.sensor_name);
     setCheckedGroups(sensor.groups.map((g) => g.group_id));
-  }, [sensor]);
+
+    const data: ChartedSensor[] = DATA_PARAMETER_VARIANTS.map((parameter) => ({
+      color: getColorByParameter(parameter),
+      parameter,
+      sensor_id: sensor.sensor_id,
+    }));
+    setChartedData(data);
+  }, [sensor, isOpen]);
 
   async function postEditedSensor(
     sensorId: number,
@@ -48,12 +69,14 @@ const SensorModal: React.FC<SensorModalProps> = ({
         body: JSON.stringify(payload),
       })
         .then((data) => data.json())
-        .then((parsed_data) => {
+        .then((response: GenericApiResponse) => {
+          if (response.status === 'err') throw new Error(response.message);
           res(null);
         })
-        .catch((e) => {
+        .catch((e: Error) => {
           console.error(e);
-          rej(e);
+          toast.error(e.message);
+          throw e;
         });
     });
   }
@@ -61,86 +84,161 @@ const SensorModal: React.FC<SensorModalProps> = ({
   const data = useContext(DataContext);
   const functions = useContext(FunctionContext);
 
+  const [latestData, setLatestData] = useState<FetchDataData | null>(null);
+  useEffect(() => {
+    const sensorData = data.latestSensorData[sensor.sensor_id];
+    if (sensorData === undefined) return;
+    setLatestData(sensorData);
+  }, [data, sensor]);
+
   return (
-    <Modal
-      isOpen={isOpen}
-      style={{ content: { padding: '20px' }, overlay: { zIndex: 11 } }}
-      onAfterClose={onClose}
-    >
-      <div className="modal sensor_modal">
-        <div className="modal-header">
-          <h2>{sensor.sensor_name}</h2>
-          <FaTimes onClick={() => setIsOpen(false)} />
-        </div>
-        <div>
-          <table>
-            <tbody>
-              <tr>
-                <td>Název:</td>
-                <td>
-                  <input
-                    type="text"
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
+    <>
+      <CustomModal
+        isOpen={isOpen}
+        handleClose={() => setIsOpen(false)}
+        onClose={onClose}
+        title={`Senzor - ${sensor.sensor_name}`}
+        content={
+          <>
+            <div className="flex-shrink h-full flex flex-col">
+              <div className="flex-shrink">
+                <span className="text-xl pr-2">Název:</span>
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                />
+              </div>
+              <div className="flex-grow overflow-y-hidden flex flex-col">
+                <h5 className="text-xl mt-2 mb-1">Skupiny</h5>
+                <div className="h-full flex flex-col overflow-y-auto flex-grow">
+                  {data.groupList.map((g, idx) => {
+                    const elementId = `group_${g.group_id}`;
+                    return (
+                      <div key={idx} className="min-w-60 flex flex-row gap-1">
+                        <input
+                          type="checkbox"
+                          id={elementId}
+                          checked={checkedGroups.includes(g.group_id)}
+                          onChange={(e) => {
+                            if (e.target.checked === true) {
+                              if (!checkedGroups.includes(g.group_id)) {
+                                setCheckedGroups([
+                                  ...checkedGroups,
+                                  g.group_id,
+                                ]);
+                              }
+                            } else {
+                              const index = checkedGroups.findIndex(
+                                (x) => x === g.group_id
+                              );
+                              if (index > -1) {
+                                const newCheckedGroups = [...checkedGroups];
+                                newCheckedGroups.splice(index, 1);
+                                setCheckedGroups(newCheckedGroups);
+                              }
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={elementId}
+                          className="flex flex-row items-center"
+                        >
+                          <GrStatusGoodSmall color={g.group_color} />
+                          {g.group_name}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="flex-grow py-6 flex flex-row">
+              <div className="flex-grow flex flex-col">
+                <div className="flex-shrink flex flex-row justify-start pl-16">
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td className="font-bold pr-5">ID:</td>
+                        <td>{sensor.sensor_id}</td>
+                      </tr>
+                      <tr>
+                        <td className="font-bold pr-5">Síťové ID:</td>
+                        <td>{sensor.network_id}</td>
+                      </tr>
+                      <tr>
+                        <td className="font-bold pr-5">Poslední zpráva:</td>
+                        <td>
+                          {new Date(sensor.last_response).toLocaleString()}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex-grow">
+                  <InteractivePlot
+                    chartedSensors={chartedData}
+                    showLegend={true}
+                    includeSensorNameInTraceName={false}
                   />
-                </td>
-              </tr>
-              <tr>
-                <td>Skupiny:</td>
-                <td>
-                  <div className="group_list">
-                    <table>
-                      <tbody>
-                        {data.groupList.map((g, idx) => {
-                          const elementId = `group_${g.group_id}`;
-                          return (
-                            <tr key={idx}>
-                              <td>
-                                <input
-                                  type="checkbox"
-                                  id={elementId}
-                                  checked={checkedGroups.includes(g.group_id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked === true) {
-                                      if (!checkedGroups.includes(g.group_id)) {
-                                        setCheckedGroups([
-                                          ...checkedGroups,
-                                          g.group_id,
-                                        ]);
-                                      }
-                                    } else {
-                                      const index = checkedGroups.findIndex(
-                                        (x) => x === g.group_id
-                                      );
-                                      if (index > -1) {
-                                        const newCheckedGroups = [
-                                          ...checkedGroups,
-                                        ];
-                                        newCheckedGroups.splice(index, 1);
-                                        setCheckedGroups(newCheckedGroups);
-                                      }
-                                    }
-                                  }}
-                                />
-                              </td>
-                              <td>
-                                <label htmlFor={elementId}>
-                                  <GrStatusGoodSmall color={g.group_color} />
-                                  {g.group_name}
-                                </label>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="modal-footer">
+                </div>
+              </div>
+              <div className="flex flex-col justify-evenly h-full w-48 flex-shrink gap-4 mx-5">
+                {latestData && (
+                  <>
+                    <div className="text-center">
+                      <span className="font-bold">Teplota</span>
+                      <div className="flex flex-row justify-center items-center gap-5 mt-2">
+                        {/* <Thermometer value={latestData.temperature.values[0]} /> */}
+                        <span>
+                          {formatSensorValue(
+                            latestData.temperature.values[0],
+                            DataParameter.Temperature
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <span className="font-bold">Vlhkost</span>
+                      <div className="flex flex-row justify-center items-center gap-5 mt-2">
+                        {/* <Hygrometer value={latestData.humidity.values[0]} /> */}
+                        <span>
+                          {formatSensorValue(
+                            latestData.humidity.values[0],
+                            DataParameter.Humidity
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <span className="font-bold">RSSI</span>
+                      <div className="mt-2">
+                        <span>
+                          {formatSensorValue(
+                            latestData.rssi.values[0],
+                            DataParameter.RSSI
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <span className="font-bold">Napětí</span>
+                      <div className="mt-2">
+                        <span>
+                          {formatSensorValue(
+                            latestData.voltage.values[0],
+                            DataParameter.Voltage
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        }
+        footer={
           <button
             onClick={async () => {
               await postEditedSensor(
@@ -155,9 +253,9 @@ const SensorModal: React.FC<SensorModalProps> = ({
           >
             Uložit
           </button>
-        </div>
-      </div>
-    </Modal>
+        }
+      />
+    </>
   );
 };
 

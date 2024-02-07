@@ -79,7 +79,7 @@ function Dashboard() {
           <MdAdd />
         </button>
       </div>
-      <div className={'dashboard' + (isEditing ? ' editing' : '')}>
+      <div className="flex flex-row flex-wrap gap-2 p-8 overflow-y-auto justify-center">
         {tileList.map((t, idx) => (
           <DashboardTile
             tile={t}

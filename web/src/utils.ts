@@ -1,4 +1,8 @@
-import { NOT_AVAILABLE_TEXT, OFFLINE_THRESHOLD } from './constants';
+import {
+  DATA_PARAMETER_KEYS,
+  NOT_AVAILABLE_TEXT,
+  OFFLINE_THRESHOLD,
+} from './constants';
 import {
   DataParameter,
   DisplayParameter,
@@ -32,7 +36,11 @@ export function formatSensorData(
   }
 }
 
-export function formatSensorValue(value: number, parameter: DataParameter) {
+export function formatSensorValue(
+  value: number | null,
+  parameter: DataParameter
+) {
+  if (value === null) return NOT_AVAILABLE_TEXT;
   switch (parameter) {
     case DataParameter.Temperature:
       return value.toFixed(2) + '°C';
@@ -61,13 +69,11 @@ export function displayParameterToKey(value: DisplayParameter) {
   if (value === DisplayParameter.Name)
     throw new Error('DisplayParameter.Name not supported');
 
-  const keys = ['temperature', 'humidity', 'rssi', 'voltage'];
-  return keys[value - 1] as 'temperature' | 'humidity' | 'rssi' | 'voltage';
+  return DATA_PARAMETER_KEYS[value - 1];
 }
 
 export function dataParameterToKey(value: DataParameter) {
-  const keys = ['temperature', 'humidity', 'rssi', 'voltage'];
-  return keys[value] as 'temperature' | 'humidity' | 'rssi' | 'voltage';
+  return DATA_PARAMETER_KEYS[value];
 }
 
 export const getSensorValue = (sensor: SensorDataAll, dp: DisplayParameter) =>
@@ -168,3 +174,8 @@ export function getColorByParameter(dp: DataParameter) {
       return '#f2dc50';
   }
 }
+
+export const getHomeTimestamp = (): [number, number] => {
+  const now = new Date().getTime();
+  return [now - 24 * 60 * 60 * 1000, now];
+};

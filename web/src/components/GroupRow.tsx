@@ -1,5 +1,5 @@
 import { GrStatusGoodSmall } from 'react-icons/gr';
-import { MdDelete, MdEdit } from 'react-icons/md';
+import { MdDelete, MdRemoveRedEye } from 'react-icons/md';
 import { BaseSensor } from '../types';
 
 interface GroupRowProps {
@@ -24,9 +24,9 @@ function GroupRow({
         <GrStatusGoodSmall size={25} />
       </td>
       <td>{groupName}</td>
-      <td>{sensors.map(s => s.sensor_name).join(", ")}</td>
+      <td>{sensors.map((s) => s.sensor_name).join(', ')}</td>
       <td className="row_options">
-        <MdDelete 
+        <MdDelete
           onClick={() => {
             const prompt = window.confirm(
               `Opravdu si přejete smazat skupinu ${groupName}?`
@@ -36,7 +36,8 @@ function GroupRow({
           }}
           title="Smazat skupinu"
         />
-        <MdEdit onClick={openModal} title="Upravit skupinu" />
+
+        <MdRemoveRedEye title="Zobrazit detaily" onClick={openModal} />
       </td>
     </tr>
   );

@@ -91,7 +91,7 @@ function Groups() {
                   sensors={group.sensors}
                   openModal={() => {
                     const g =
-                      data.groupList.find(
+                      localGroupList.find(
                         (g) => g.group_id === group.group_id
                       ) || null;
                     setDisplayedGroup(g);

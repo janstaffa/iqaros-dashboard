@@ -1,10 +1,9 @@
 import { useContext, useEffect, useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
-import Modal from 'react-modal';
 import { toast } from 'react-toastify';
 import { FunctionContext } from '../../App';
 import { APP_API_BASE_PATH } from '../../constants';
 import { GenericApiResponse, SensorGroup } from '../../types';
+import CustomModal from '../CustomModal';
 
 export interface GroupModalProps {
   isOpen: boolean;
@@ -58,16 +57,11 @@ const GroupModal: React.FC<GroupModalProps> = ({
     });
   }
   return (
-    <Modal
+    <CustomModal
       isOpen={isOpen}
-      contentLabel="Example Modal"
-      style={{ content: { padding: '20px' } }}
-    >
-      <div className="modal">
-        <div className="modal-header">
-          <h2>{displayedGroup?.group_name}</h2>
-          <FaTimes onClick={() => setIsOpen(false)} />
-        </div>
+      handleClose={() => setIsOpen(false)}
+      title={`Skupina - ${displayedGroup?.group_name}`}
+      content={
         <div>
           <table>
             <tbody>
@@ -109,25 +103,30 @@ const GroupModal: React.FC<GroupModalProps> = ({
             </tbody>
           </table>
         </div>
-        <div className="modal-footer">
-          <button
-            onClick={async () => {
-              if (displayedGroup) {
+      }
+      footer={
+        <button
+          onClick={async () => {
+            if (displayedGroup) {
+              try {
                 await postEditedGroup(
                   displayedGroup.group_id,
                   groupNameInput,
                   groupColorInput
                 );
-                functions.fetchGroupList();
+                toast.success('Změny byly uloženy');
+              } catch (_) {
+                return;
               }
-              setIsOpen(false);
-            }}
-          >
-            Uložit
-          </button>
-        </div>
-      </div>
-    </Modal>
+              functions.fetchGroupList();
+            }
+            setIsOpen(false);
+          }}
+        >
+          Uložit
+        </button>
+      }
+    />
   );
 };
 

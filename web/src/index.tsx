@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Modal from 'react-modal';
 import App from './App';
@@ -9,7 +8,7 @@ const root = ReactDOM.createRoot(app);
 Modal.setAppElement(app);
 
 root.render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <App />
-  </React.StrictMode>
+  // </React.StrictMode>
 );

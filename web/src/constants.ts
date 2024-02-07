@@ -1,3 +1,5 @@
+import { DataParameter } from "./types";
+
 export const API_BASE_PATH = 'http://localhost:4000/api';
 export const APP_API_BASE_PATH = 'http://localhost:4000/app';
 
@@ -78,3 +80,10 @@ export const DATA_PARAMETER_KEYS: (
   | 'rssi'
   | 'voltage'
 )[] = ['temperature', 'humidity', 'rssi', 'voltage'];
+
+export const DATA_PARAMETER_VARIANTS = [
+  DataParameter.Temperature,
+  DataParameter.Humidity,
+  DataParameter.RSSI,
+  DataParameter.Voltage,
+];

@@ -98,19 +98,21 @@ function Sensors() {
                   }}
                   key={i}
                 >
-                  {sh?.columnName}
-                  {sh !== null &&
-                    (sortOptions.sortPath === sh.sortPath ? (
-                      sortOptions.sort === Sort.Ascending ? (
-                        <FaSortUp />
-                      ) : sortOptions.sort === Sort.Descending ? (
-                        <FaSortDown />
+                  <div className='flex flex-row items-center'>
+                    {sh?.columnName}
+                    {sh !== null &&
+                      (sortOptions.sortPath === sh.sortPath ? (
+                        sortOptions.sort === Sort.Ascending ? (
+                          <FaSortUp />
+                        ) : sortOptions.sort === Sort.Descending ? (
+                          <FaSortDown />
+                        ) : (
+                          <FaSort className="sort_hidden" />
+                        )
                       ) : (
                         <FaSort className="sort_hidden" />
-                      )
-                    ) : (
-                      <FaSort className="sort_hidden" />
-                    ))}
+                      ))}
+                  </div>
                 </td>
               ))}
             </tr>
