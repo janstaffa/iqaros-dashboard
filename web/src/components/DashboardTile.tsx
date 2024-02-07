@@ -132,7 +132,7 @@ const Hygrometer: React.FC<MeterProps> = ({ value }) => {
             y="95"
           />
         </g>
-       {/* <path
+        {/* <path
           id="rect12"
           style={{ fill: '#ffffff' }}
           d="M 0.011885579 0 C 0.0054076408 -7.8332324e-17 0 0.46654617 0 1.045931 L 0 98.954167 C 0 99.533551 0.0054076408 100.0001 0.011885579 100.0001 L 19.999813 100.0001 A 80 80 0 0 1 100.0001 19.999813 A 80 80 0 0 1 179.99987 100.0001 L 199.98831 100.0001 C 199.99479 100.0001 200.0002 99.533551 200.0002 98.954167 L 200.0002 1.045931 C 200.0002 0.46654617 199.99479 0 199.98831 0 L 0.011885579 0 z "
@@ -316,7 +316,7 @@ const DashboardTile: React.FC<TileProps> = ({
         {isEditing && <IoMdTrash onClick={remove} />}
       </div>
       <div className="tile_data">
-        {tile.operation === TileOperation.Display &&
+        {tile.show_graphic &&
           (tile.parameter === DataParameter.Temperature ? (
             <Thermometer value={value} />
           ) : tile.parameter === DataParameter.Humidity ? (

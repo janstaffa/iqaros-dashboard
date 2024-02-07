@@ -163,6 +163,7 @@ export interface Tile {
   arg2_value: number | null;
   operation: number;
   parameter: number;
+  show_graphic: boolean;
 }
 export interface TileListApiResponse extends GenericApiResponse {
   data: Tile[];

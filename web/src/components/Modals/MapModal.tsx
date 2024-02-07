@@ -29,8 +29,6 @@ const MapModal: React.FC<MapModalProps> = ({
 }) => {
   const data = useContext(DataContext);
 
-  const [modalErrorMessage, setModalErrorMessage] = useState('');
-
   const [fileInput, setFileInput] = useState<File | null>(null);
   const [nameInput, setNameInput] = useState('');
 
@@ -50,16 +48,13 @@ const MapModal: React.FC<MapModalProps> = ({
         body: payload,
       })
         .then((data) => data.json())
-        .then((parsed_data: GenericApiResponse) => {
-          if (parsed_data.status === 'err') {
-            return rej(parsed_data.message!);
-          }
-
+        .then((response: GenericApiResponse) => {
+          if (response.status === 'err') throw new Error(response.message);
           res(null);
         })
-        .catch((e) => {
+        .catch((e: Error) => {
           console.error(e);
-          rej('Unknown error.');
+          toast.error(e.message);
         });
     });
   }
@@ -77,14 +72,14 @@ const MapModal: React.FC<MapModalProps> = ({
       body: JSON.stringify(payload),
     })
       .then((data) => data.json())
-      .then((parsed_data: GenericApiResponse) => {
-        if (parsed_data.status === 'err') {
-          console.error(parsed_data.message);
-          return;
-        }
+      .then((response: GenericApiResponse) => {
+        if (response.status === 'err') throw new Error(response.message);
         fetchMapList();
       })
-      .catch((e) => console.error(e));
+      .catch((e: Error) => {
+        console.error(e);
+        toast.error(e.message);
+      });
   }
 
   async function postEditedMap(
@@ -117,10 +112,10 @@ const MapModal: React.FC<MapModalProps> = ({
           if (parsed_data.status !== 'ok') throw new Error('Request failed');
           res(null);
         })
-        .catch((e) => {
+        .catch((e: Error) => {
           console.error(e);
-          if (e.message) rej(e.message);
-          if (typeof e === 'string') rej(e);
+          toast.error(e.message);
+          throw e.message;
         });
     });
   }
@@ -145,7 +140,6 @@ const MapModal: React.FC<MapModalProps> = ({
           <FaTimes
             onClick={() => {
               setIsOpen(false);
-              setModalErrorMessage('');
             }}
           />
         </div>
@@ -178,11 +172,6 @@ const MapModal: React.FC<MapModalProps> = ({
                     ) : (
                       <span>{detailMap?.original_image_name}</span>
                     )}
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan={2} className="error">
-                    {modalErrorMessage}
                   </td>
                 </tr>
               </tbody>
@@ -272,20 +261,19 @@ const MapModal: React.FC<MapModalProps> = ({
           <button
             onClick={async () => {
               if (nameInput === null || nameInput.length === 0) {
-                setModalErrorMessage('Map name cannot be empty.');
+                toast.error('Název mapy nemůže být prázdný');
                 return;
               }
               if (isNewMap) {
                 if (fileInput === null) {
-                  setModalErrorMessage('No image selected.');
+                  toast.error('Nebyl vybrán obrázek');
                   return;
                 }
                 try {
                   await createNewMap(nameInput, fileInput);
-                  toast.success('Mapa byla přidána.');
+                  toast.success('Mapa byla přidána');
                   fetchMapList();
-                } catch (e: any) {
-                  setModalErrorMessage(e);
+                } catch (_) {
                   return;
                 }
               } else {
@@ -298,13 +286,11 @@ const MapModal: React.FC<MapModalProps> = ({
                     );
                     toast.success('Změny byly uloženy');
                     fetchMapList();
-                  } catch (e: any) {
-                    setModalErrorMessage(e);
+                  } catch (_) {
                     return;
                   }
                 }
               }
-              setModalErrorMessage('');
               setIsOpen(false);
             }}
           >

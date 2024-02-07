@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import Modal from 'react-modal';
+import { toast } from 'react-toastify';
 import { FunctionContext } from '../../App';
 import { APP_API_BASE_PATH } from '../../constants';
 import { GenericApiResponse, SensorGroup } from '../../types';
@@ -46,20 +47,19 @@ const GroupModal: React.FC<GroupModalProps> = ({
         body: JSON.stringify(payload),
       })
         .then((data) => data.json())
-        .then((parsed_data: GenericApiResponse) => {
-          if (parsed_data.status !== 'ok') throw new Error('Request failed');
+        .then((response: GenericApiResponse) => {
+          if (response.status === 'err') throw new Error(response.message);
           res(null);
         })
-        .catch((e) => {
+        .catch((e: Error) => {
           console.error(e);
-          rej(e);
+          toast.error(e.message);
         });
     });
   }
   return (
     <Modal
       isOpen={isOpen}
-      // style={customStyles}
       contentLabel="Example Modal"
       style={{ content: { padding: '20px' } }}
     >

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { MdAdd, MdEdit } from 'react-icons/md';
+import { toast } from 'react-toastify';
 import { DataContext } from '../App';
 import InteractiveMap from '../components/InteractiveMap';
 import MapModal from '../components/Modals/MapModal';
@@ -32,10 +33,7 @@ function Heatmap() {
       .then((data) => data.json())
       .then((parsed_data) => {
         const response = parsed_data as MapListApiResponse;
-        if (response.status === 'err') {
-          console.error(response.message);
-          return;
-        }
+        if (response.status === 'err') throw new Error(response.message);
 
         setMapList(response.data);
 
@@ -46,8 +44,9 @@ function Heatmap() {
         }
         setIsLoadingMap(false);
       })
-      .catch((e) => {
-        throw e;
+      .catch((e: Error) => {
+        console.error(e);
+        toast.error(e.message);
       });
   };
 

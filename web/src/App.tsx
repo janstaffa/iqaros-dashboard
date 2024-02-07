@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { BallTriangle } from 'react-loader-spinner';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Nav from './Nav';
 import {
@@ -69,10 +69,10 @@ function App() {
     return new Promise<Sensor[]>((res, rej) =>
       fetch(APP_API_BASE_PATH + '/sensorlist')
         .then((data) => data.json())
-        .then((parsed_data: SensorListApiResponse) => {
-          if (parsed_data.status === 'err')
-            throw new Error(parsed_data.message);
-          const data = parsed_data.data.map((s) => {
+        .then((response: SensorListApiResponse) => {
+          if (response.status === 'err') throw new Error(response.message);
+
+          const data = response.data.map((s) => {
             const lastMessageTimestamp = Math.max(
               s.data.temperature.timestamp,
               s.data.humidity.timestamp,
@@ -87,9 +87,9 @@ function App() {
           if (!inBackground) setSensorListLoading(false);
           res(data);
         })
-        .catch((e) => {
-          rej(null);
-          throw e;
+        .catch((e: Error) => {
+          console.error(e);
+          toast.error(e.message);
         })
     );
   }, []);
@@ -98,13 +98,15 @@ function App() {
     if (!inBackground) setGroupListLoading(true);
     fetch(APP_API_BASE_PATH + '/grouplist')
       .then((data) => data.json())
-      .then((parsed_data) => {
-        const response = parsed_data as GroupListApiResponse;
+      .then((response: GroupListApiResponse) => {
+        if (response.status === 'err') throw new Error(response.message);
+
         setGroupList(response.data);
         if (!inBackground) setGroupListLoading(false);
       })
-      .catch((e) => {
-        throw e;
+      .catch((e: Error) => {
+        console.error(e);
+        toast.error(e.message);
       });
   }, []);
 
@@ -120,13 +122,15 @@ function App() {
 
     return fetch(API_BASE_PATH + '/fetchdata' + query)
       .then((data) => data.json())
-      .then((parsed_data) => {
-        const response = parsed_data as FetchDataApiResponse;
+      .then((response: FetchDataApiResponse) => {
+        if (response.status === 'err') throw new Error(response.message);
+
         setLatestSensorData(response.data.values);
         if (!inBackground) setLatestDataLoading(false);
       })
-      .catch((e) => {
-        throw e;
+      .catch((e: Error) => {
+        console.error(e);
+        toast.error(e.message);
       });
   }
 
@@ -183,7 +187,11 @@ function App() {
                 filteredValues[sId] = filteredData as FetchDataData;
               }
             }
-            console.log('GETTING FROM CACHE', filteredValues, cachedSensorsRef.current);
+            console.log(
+              'GETTING FROM CACHE',
+              filteredValues,
+              cachedSensorsRef.current
+            );
             return filteredValues;
           }
         }
@@ -193,8 +201,9 @@ function App() {
       return new Promise<FetchDataDataWrapped>((res, rej) =>
         fetch(API_BASE_PATH + '/fetchdata' + query)
           .then((data) => data.json())
-          .then((parsed_data) => {
-            const response = parsed_data as FetchDataApiResponse;
+          .then((response: FetchDataApiResponse) => {
+            if (response.status === 'err') throw new Error(response.message);
+
             const key = `${from}-${to}`;
             const values = response.data.values;
             setCachedSensorsData((oldCachedSensorData) => {
@@ -204,9 +213,9 @@ function App() {
             });
             res(values);
           })
-          .catch((e) => {
-            rej(e);
-            throw e;
+          .catch((e: Error) => {
+            console.error(e);
+            toast.error(e.message);
           })
       );
     },
@@ -289,7 +298,7 @@ function App() {
               </>
             </main>
           </BrowserRouter>
-          <ToastContainer />
+          <ToastContainer style={{zIndex: 999999}}/>
         </FunctionContext.Provider>
       </DataContext.Provider>
     </div>

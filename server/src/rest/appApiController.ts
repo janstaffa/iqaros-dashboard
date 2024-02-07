@@ -575,6 +575,7 @@ export function appApiController(app: Express, db: sqlite.Database) {
         arg2_value,
         operation,
         parameter,
+        show_graphic,
       } = req.body;
 
       if (
@@ -593,8 +594,8 @@ export function appApiController(app: Express, db: sqlite.Database) {
 
       db.run(
         `INSERT
-         INTO dashboard_tiles (title, 'order', arg1, arg1_type, arg1_value, operation, parameter, arg2, arg2_type, arg2_value)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         INTO dashboard_tiles (title, 'order', arg1, arg1_type, arg1_value, operation, parameter, arg2, arg2_type, arg2_value, show_graphic)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           title,
           order,
@@ -606,9 +607,9 @@ export function appApiController(app: Express, db: sqlite.Database) {
           arg2 == undefined ? null : arg2,
           arg2_type == undefined ? null : arg2_type,
           arg2_value == undefined ? null : arg2_value,
+          show_graphic,
         ],
         (err: any) => {
-          console.log(err);
           if (err)
             return res.json({
               status: 'err',
@@ -640,7 +641,10 @@ export function appApiController(app: Express, db: sqlite.Database) {
 
           return res.json({
             status: 'ok',
-            data: rows,
+            data: rows.map((row: DashboardTilesDBObject) => ({
+              ...row,
+              show_graphic: !!row.show_graphic,
+            })),
           });
         }
       );

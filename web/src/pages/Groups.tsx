@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { MdAdd } from 'react-icons/md';
+import { toast } from 'react-toastify';
 import { DataContext, FunctionContext } from '../App';
 import GroupRow from '../components/GroupRow';
 import GroupModal from '../components/Modals/GroupModal';
@@ -20,11 +21,15 @@ function Groups() {
       mode: 'cors',
     })
       .then((data) => data.json())
-      .then((parsed_data) => {
+      .then((response: GenericApiResponse) => {
+        if (response.status === 'err') throw new Error(response.message);
         // Push it on top of the list
-        setLocalGroupList([parsed_data['data'], ...localGroupListRef.current]);
+        setLocalGroupList([response['data'], ...localGroupListRef.current]);
       })
-      .catch((e) => console.error(e));
+      .catch((e: Error) => {
+        console.error(e);
+        toast.error(e.message);
+      });
   }
   function removeGroup(groupId: number) {
     const payload = {
@@ -39,11 +44,14 @@ function Groups() {
       body: JSON.stringify(payload),
     })
       .then((data) => data.json())
-      .then((parsed_data: GenericApiResponse) => {
-        if (parsed_data.status !== 'ok') throw new Error('Request failed');
+      .then((response: GenericApiResponse) => {
+        if (response.status === 'err') throw new Error(response.message);
         functions.fetchGroupList();
       })
-      .catch((e) => console.error(e));
+      .catch((e: Error) => {
+        console.error(e);
+        toast.error(e.message);
+      });
   }
 
   useEffect(() => {

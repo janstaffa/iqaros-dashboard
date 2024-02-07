@@ -121,6 +121,7 @@ export interface DashboardTilesDBObject {
   arg2_value: number;
   operation: number;
   parameter: number;
+  show_graphic: number;
 }
 
 export type SensorDataMap = { [sensorId: string]: SensorDataAll };

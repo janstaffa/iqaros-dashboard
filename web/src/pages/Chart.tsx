@@ -4,13 +4,7 @@ import { GoDash } from 'react-icons/go';
 import { GrStatusGoodSmall } from 'react-icons/gr';
 import Plot from 'react-plotly.js';
 import { DataContext, FunctionContext } from '../App';
-import { API_BASE_PATH } from '../constants';
-import {
-  ChartedSensor,
-  DataParameter,
-  FetchDataApiResponse,
-  FetchDataDataWrapped,
-} from '../types';
+import { ChartedSensor, DataParameter, FetchDataDataWrapped } from '../types';
 import {
   convertToISOWithTimezone,
   dataParameterToKey,
@@ -26,28 +20,6 @@ function Chart() {
   const [sensorData, setSensorData] = useState<FetchDataDataWrapped | null>(
     null
   );
-
-  function fetchSensorData(
-    sensorId: number | number[],
-    from?: number,
-    to?: number
-  ) {
-    let query = `?sensorId=${
-      typeof sensorId === 'number' ? sensorId : sensorId.join(',')
-    }`;
-    if (from !== undefined) query += `&from=${from}`;
-    if (from !== undefined && to !== undefined) query += `&to=${to}`;
-
-    return fetch(API_BASE_PATH + '/fetchdata' + query)
-      .then((data) => data.json())
-      .then((parsed_data) => {
-        const response = parsed_data as FetchDataApiResponse;
-        setSensorData(response.data.values);
-      })
-      .catch((e) => {
-        throw e;
-      });
-  }
 
   const [chartedSensors, setChartedSensors] = useState<ChartedSensor[]>([]);
 
@@ -88,11 +60,6 @@ function Chart() {
       .then((d) => {
         setSensorData(d);
       });
-    // fetchSensorData(
-    //   sensorsWithoutDuplicates.map((s) => s.sensor_id),
-    //   timestampFrom,
-    //   timestampTo
-    // );
   }, [chartedSensors, timestampFrom, timestampTo, functionsProvider]);
 
   const [chartData, setChartData] = useState<any[]>();
