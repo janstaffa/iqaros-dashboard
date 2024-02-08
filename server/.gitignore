@@ -5,3 +5,5 @@ mosquitto.conf
 data.db
 
 /userdata
+
+.env

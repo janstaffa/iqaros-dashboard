@@ -153,18 +153,18 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   if (!map) return null;
   return (
     <div className="interactive_map_wrap">
-      <div className="interactive_map_controls">
+      <div className="absolute top-3 right-3 z-20 flex flex-row gap-1">
         <button
           onClick={() => {
             setMapZoom(Math.min(mapZoom + ZOOM_FACTOR, MAX_ZOOM));
           }}
         >
-          <MdZoomIn />
+          <MdZoomIn size={30}/>
         </button>
         <button
           onClick={() => setMapZoom(Math.max(mapZoom - ZOOM_FACTOR, MIN_ZOOM))}
         >
-          <MdZoomOut />
+          <MdZoomOut size={30} />
         </button>
       </div>
       <div

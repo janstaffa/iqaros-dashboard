@@ -13,12 +13,15 @@ import sqlite from 'sqlite3';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
+import dotenv from 'dotenv';
 import fileUpload from 'express-fileupload';
 import { createClient } from 'redis';
 import { appApiController } from './rest/appApiController';
 import { sensorApiController } from './rest/sensorApiController';
 import { IQAROS_Response } from './types';
 import { dataParameterToKey, parseSensor } from './utils';
+
+dotenv.config();
 
 // DATABASE
 const db = new sqlite.Database(DB_FILE, (error) => {

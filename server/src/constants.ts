@@ -3,9 +3,6 @@ export const DB_FILE = './data.db';
 export const MQTT_REQUEST_TOPIC = 'data_push';
 export const MQTT_RESPONSE_TOPIC = 'data_pull';
 
-export const AUTH_USER = 'admin';
-export const AUTH_PASS = 'admin';
-
 export const SENSOR_ADDRESS_RANGE_OFFSET = 48 - 1;
 
 export const NEW_GROUP_NAME_TEMPLATE = 'Nová skupina';

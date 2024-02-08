@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { AUTH_PASS, AUTH_USER, RANDOM_GROUP_COLORS } from '../constants';
+import { RANDOM_GROUP_COLORS } from '../constants';
 
 // Authentication
 export function auth(req: Request, res: Response, next: NextFunction) {
@@ -8,7 +8,12 @@ export function auth(req: Request, res: Response, next: NextFunction) {
     .toString()
     .split(':');
 
-  if (login && password && login === AUTH_USER && password === AUTH_PASS) {
+  if (
+    login &&
+    password &&
+    login === process.env['AUTH_USER'] &&
+    password === process.env['AUTH_PASS']
+  ) {
     return next();
   }
 

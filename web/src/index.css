@@ -80,6 +80,7 @@ button {
   padding: 3px 5px;
   outline: none;
   box-sizing: border-box;
+  background-color: white;
 }
 button:hover {
   background-color: #f3f3f3;
@@ -402,29 +403,6 @@ label {
   position: absolute;
   top: 0;
   left: 0;
-}
-.interactive_map_controls {
-  z-index: 11;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: fit-content;
-  height: 30px;
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
-}
-.interactive_map_controls button {
-  font-size: 30px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  width: 30px;
-  height: 30px;
-  background-color: transparent;
-  border: none;
 }
 
 .interactive_map_wrap {
