@@ -689,3 +689,18 @@ label {
 .group_data_matrix tr:not(:last-child) {
   @apply border-b border-gray-300;
 }
+
+.flow_card {
+  position: relative;
+  z-index: 100;
+}
+.flow_card:not(.tail_hidden)::before {
+  content: '';
+  position: absolute;
+  top: -1.1rem;
+  left: 50%;
+  height: 1.1rem;
+  width: 2px;
+  background-color: black;
+  z-index: -100;
+}

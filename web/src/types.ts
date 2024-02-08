@@ -157,7 +157,7 @@ export interface Tile {
   title: string;
   arg1: number;
   arg1_type: number;
-  arg1_value: number;
+  arg1_value: number | null;
   arg2: number | null;
   arg2_type: number | null;
   arg2_value: number | null;

@@ -183,7 +183,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-col flex-grow">
+          <div className="flex flex-col flex-grow pr-4">
             <div className="w-full flex flex-row justify-end gap-3">
               {displayType === DisplayType.Chart && (
                 <select

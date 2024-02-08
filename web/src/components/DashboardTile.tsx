@@ -1,4 +1,5 @@
 import { IoMdTrash } from 'react-icons/io';
+import { MdEdit } from 'react-icons/md';
 import { NOT_AVAILABLE_TEXT } from '../constants';
 import {
   DataParameter,
@@ -17,7 +18,8 @@ export interface TileProps {
   sensorData: FetchDataDataWrapped;
   groupList: SensorGroup[];
   isEditing: boolean;
-  remove: () => void;
+  handleRemove: () => void;
+  handleEdit: () => void;
 }
 
 const DashboardTile: React.FC<TileProps> = ({
@@ -25,7 +27,8 @@ const DashboardTile: React.FC<TileProps> = ({
   sensorData,
   groupList,
   isEditing,
-  remove,
+  handleRemove,
+  handleEdit,
 }) => {
   let d1 = null;
   let d2 = null;
@@ -110,10 +113,19 @@ const DashboardTile: React.FC<TileProps> = ({
   }
 
   return (
-    <div className="w-64 min-h-32 bg-white border border-gray-500 border-solid rounded flex flex-col select-none p-2">
+    <div className="w-64 min-h-32 bg-white border border-gray-500 border-solid rounded flex flex-col select-none p-2 relative">
       <div className="flex-shrink text-center align-middle text-xl p-1">
         <span>{tile.title}</span>
-        {isEditing && <IoMdTrash onClick={remove} />}
+        {isEditing && (
+          <div className="flex flex-row absolute bottom-2 right-2 z-10 gap-1">
+            <button onClick={handleRemove}>
+              <IoMdTrash />
+            </button>
+            <button onClick={handleEdit}>
+              <MdEdit />
+            </button>
+          </div>
+        )}
       </div>
       <div
         className="flex-grow flex flex-row justify-evenly items-center gap-2 text-3xl py-3"

@@ -7,7 +7,7 @@ export interface CustomModalProps {
   onClose?: () => void;
   handleClose: () => void;
   content: JSX.Element;
-  footer: JSX.Element;
+  footer: JSX.Element | null;
 }
 
 const CustomModal: React.FC<CustomModalProps> = ({

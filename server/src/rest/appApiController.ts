@@ -565,8 +565,8 @@ export function appApiController(app: Express, db: sqlite.Database) {
   app.post('/app/posttile', (req: Request, res) => {
     try {
       const {
+        ID,
         title,
-        order,
         arg1,
         arg1_type,
         arg1_value,
@@ -576,11 +576,12 @@ export function appApiController(app: Express, db: sqlite.Database) {
         operation,
         parameter,
         show_graphic,
+        order,
       } = req.body;
 
       if (
         title == undefined ||
-        order == undefined ||
+        title.length === 0 ||
         arg1 == undefined ||
         arg1_type == undefined ||
         arg1_value == undefined ||
@@ -592,36 +593,94 @@ export function appApiController(app: Express, db: sqlite.Database) {
           message: 'Invalid request',
         });
 
-      db.run(
-        `INSERT
+      if (ID !== undefined && ID !== null) {
+        db.all(
+          `SELECT *
+        FROM dashboard_tiles
+        WHERE ID = ?`,
+          ID,
+          (err, rows) => {
+            if (err) {
+              console.error(err);
+              return res.json({
+                status: 'err',
+                message: 'Failed to get from database',
+              });
+            }
+
+            if (rows.length === 0) {
+              return res.json({
+                status: 'err',
+                message: 'Tile with this ID doesnt exist',
+              });
+            }
+            db.run(
+              `UPDATE dashboard_tiles 
+            SET title = ?, arg1 = ?, arg1_type = ?, arg1_value = ?, operation = ?, parameter = ?, arg2 = ?, arg2_type = ?, arg2_value = ?, show_graphic = ?
+              WHERE ID = ?
+              `,
+              [
+                title,
+                arg1,
+                arg1_type,
+                arg1_value,
+                operation,
+                parameter,
+                arg2,
+                arg2_type,
+                arg2_value,
+                show_graphic,
+                ID,
+              ],
+              (err) => {
+                if (err) {
+                  console.error(err);
+                  return res.json({
+                    status: 'err',
+                    message: 'Failed to update database',
+                  });
+                }
+                return res.json({
+                  status: 'ok',
+                });
+              }
+            );
+            return;
+          }
+        );
+        return;
+      } else {
+        db.run(
+          `INSERT
          INTO dashboard_tiles (title, 'order', arg1, arg1_type, arg1_value, operation, parameter, arg2, arg2_type, arg2_value, show_graphic)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          title,
-          order,
-          arg1,
-          arg1_type,
-          arg1_value,
-          operation,
-          parameter,
-          arg2 == undefined ? null : arg2,
-          arg2_type == undefined ? null : arg2_type,
-          arg2_value == undefined ? null : arg2_value,
-          show_graphic,
-        ],
-        (err: any) => {
-          if (err)
-            return res.json({
-              status: 'err',
-              message: 'Failed to insert into database.',
-            });
+          [
+            title,
+            0,
+            arg1,
+            arg1_type,
+            arg1_value,
+            operation,
+            parameter,
+            arg2 == undefined ? null : arg2,
+            arg2_type == undefined ? null : arg2_type,
+            arg2_value == undefined ? null : arg2_value,
+            show_graphic,
+          ],
+          (err: any) => {
+            if (err)
+              return res.json({
+                status: 'err',
+                message: 'Failed to insert into database.',
+              });
 
-          return res.json({
-            status: 'ok',
-          });
-        }
-      );
-      return;
+            return res.json({
+              status: 'ok',
+            });
+          }
+        );
+        return;
+      }
     } catch (e) {
       return res.json({ status: 'err', message: e });
     }

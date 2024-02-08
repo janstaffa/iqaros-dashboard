@@ -59,6 +59,7 @@ function Dashboard() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [editedTile, setEditedTile] = useState<Tile | null>(null);
 
   return (
     <>
@@ -72,6 +73,7 @@ function Dashboard() {
         </button>
         <button
           onClick={() => {
+            setEditedTile(null);
             setModalIsOpen(true);
           }}
           title="Nová dlaždice"
@@ -86,7 +88,11 @@ function Dashboard() {
             sensorData={data.latestSensorData}
             groupList={data.groupList}
             isEditing={isEditing}
-            remove={() => removeTile(t.ID)}
+            handleRemove={() => removeTile(t.ID)}
+            handleEdit={() => {
+              setEditedTile(t);
+              setModalIsOpen(true);
+            }}
             key={idx}
           />
         ))}
@@ -96,6 +102,7 @@ function Dashboard() {
         setIsOpen={setModalIsOpen}
         tileList={tileList}
         fetchTileList={fetchTileList}
+        editedTile={editedTile}
       />
     </>
   );

@@ -73,7 +73,7 @@ function Groups() {
       <div className="styled_table">
         <table className="w-full table-fixed">
           <colgroup>
-            <col width="50px" />
+            <col width="70px" />
             <col width="300px" />
             <col />
             <col width="100px" />

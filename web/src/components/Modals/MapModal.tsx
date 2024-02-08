@@ -110,8 +110,8 @@ const MapModal: React.FC<MapModalProps> = ({
         body: JSON.stringify(payload),
       })
         .then((data) => data.json())
-        .then((parsed_data: GenericApiResponse) => {
-          if (parsed_data.status !== 'ok') throw new Error('Request failed');
+        .then((response: GenericApiResponse) => {
+          if (response.status === 'err') throw new Error(response.message);
           res(null);
         })
         .catch((e: Error) => {
@@ -138,122 +138,114 @@ const MapModal: React.FC<MapModalProps> = ({
       title={isNewMap ? 'Nová mapa' : `Mapa - ${detailMap?.map_name}`}
       content={
         <>
-          <div>
-            <table>
-              <tbody>
-                <tr>
-                  <td>Název:</td>
-                  <td>
-                    <input
-                      type="text"
-                      value={nameInput}
-                      onChange={(e) => setNameInput(e.target.value)}
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td>Mapa:</td>
-                  <td>
-                    {isNewMap ? (
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={!isNewMap}
-                        onChange={(e) => {
-                          setFileInput(e.target.files?.[0] || null);
-                        }}
-                      />
-                    ) : (
-                      <span>{detailMap?.original_image_name}</span>
-                    )}
-                  </td>
-                </tr>
-                {!isNewMap && (
+          <div className="flex-shrink h-full flex flex-col">
+            <div className="flex-shrink flex flex-row justify-start">
+              <table>
+                <tbody>
                   <tr>
-                    <td colSpan={2}>
-                      <div
-                        className="sensor_list"
-                        style={{ maxHeight: '400px' }}
-                      >
-                        <table>
-                          <tbody>
-                            {data.sensorList.map((s, idx) => {
-                              const checkboxId = 'show-on-map_' + s.sensor_id;
-                              const displayedSensorIdx =
-                                displayedSensors.findIndex(
-                                  (x) => x.sensor.sensor_id === s.sensor_id
-                                );
-
-                              return (
-                                <tr key={idx}>
-                                  <td>
-                                    <input
-                                      type="checkbox"
-                                      id={checkboxId}
-                                      checked={displayedSensorIdx !== -1}
-                                      onChange={(e) => {
-                                        let newDisplayedSensors: DisplayedSensor[] =
-                                          [...displayedSensors];
-                                        if (e.target.checked) {
-                                          newDisplayedSensors.push({
-                                            sensor: s,
-                                            pos_x: 10,
-                                            pos_y: 10,
-                                          });
-                                        } else {
-                                          newDisplayedSensors.splice(
-                                            displayedSensorIdx,
-                                            1
-                                          );
-                                        }
-
-                                        setDisplayedSensors(
-                                          newDisplayedSensors
-                                        );
-                                      }}
-                                    />
-                                    <label htmlFor={checkboxId}>
-                                      {s.sensor_name}
-                                    </label>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+                    <td className="font-bold pr-5 border p-2">Název:</td>
+                    <td className="border p-2">
+                      <input
+                        type="text"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                      />
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          {!isNewMap && (
-            <div className="map_wrap">
-              {detailMap && (
-                <InteractiveMap
-                  map={detailMap}
-                  displayedSensors={displayedSensors}
-                  displayParameter={DisplayParameter.Name}
-                  moveSensor={(sensorId, newX, newY) => {
-                    const updatedDisplayedSensors = displayedSensors.map(
-                      (s) => ({ ...s })
-                    );
+                  <tr>
+                    <td className="font-bold pr-5 border p-2">Mapa:</td>
+                    <td className="border p-2">
+                      {isNewMap ? (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={!isNewMap}
+                          onChange={(e) => {
+                            setFileInput(e.target.files?.[0] || null);
+                          }}
+                        />
+                      ) : (
+                        <span>{detailMap?.original_image_name}</span>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="flex-grow overflow-y-hidden flex flex-col">
+              {!isNewMap && (
+                <>
+                  <h5 className="text-xl mt-2 mb-1">Senzory</h5>
+                  <div className="h-full flex flex-col overflow-y-auto flex-grow border p-2">
+                    {data.sensorList.map((s, idx) => {
+                      const checkboxId = 'show-on-map_' + s.sensor_id;
+                      const displayedSensorIdx = displayedSensors.findIndex(
+                        (x) => x.sensor.sensor_id === s.sensor_id
+                      );
 
-                    const sensorIdx = updatedDisplayedSensors.findIndex(
-                      (s) => s.sensor.sensor_id === sensorId
-                    );
+                      return (
+                        <div className="w-full flex flex-row gap-1" key={idx}>
+                          <input
+                            type="checkbox"
+                            id={checkboxId}
+                            checked={displayedSensorIdx !== -1}
+                            onChange={(e) => {
+                              let newDisplayedSensors: DisplayedSensor[] = [
+                                ...displayedSensors,
+                              ];
+                              if (e.target.checked) {
+                                newDisplayedSensors.push({
+                                  sensor: s,
+                                  pos_x: 10,
+                                  pos_y: 10,
+                                });
+                              } else {
+                                newDisplayedSensors.splice(
+                                  displayedSensorIdx,
+                                  1
+                                );
+                              }
 
-                    if (sensorIdx !== -1) {
-                      updatedDisplayedSensors[sensorIdx].pos_x = newX;
-                      updatedDisplayedSensors[sensorIdx].pos_y = newY;
-                      setDisplayedSensors(updatedDisplayedSensors);
-                    }
-                  }}
-                />
+                              setDisplayedSensors(newDisplayedSensors);
+                            }}
+                          />
+                          <label htmlFor={checkboxId}>{s.sensor_name}</label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </div>
-          )}
+          </div>
+          <div className="flex-grow overflow-y-hidden flex flex-col">
+            {!isNewMap && (
+              <div className="map_wrap">
+                {detailMap && (
+                  <InteractiveMap
+                    map={detailMap}
+                    displayedSensors={displayedSensors}
+                    displayParameter={DisplayParameter.Name}
+                    moveSensor={(sensorId, newX, newY) => {
+                      const updatedDisplayedSensors = displayedSensors.map(
+                        (s) => ({ ...s })
+                      );
+
+                      const sensorIdx = updatedDisplayedSensors.findIndex(
+                        (s) => s.sensor.sensor_id === sensorId
+                      );
+
+                      if (sensorIdx !== -1) {
+                        updatedDisplayedSensors[sensorIdx].pos_x = newX;
+                        updatedDisplayedSensors[sensorIdx].pos_y = newY;
+                        setDisplayedSensors(updatedDisplayedSensors);
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </>
       }
       footer={
@@ -306,7 +298,7 @@ const MapModal: React.FC<MapModalProps> = ({
                 if (prompt) {
                   try {
                     await removeMap(detailMap.map_id);
-                    toast.success("Mapa byla odstraněna")
+                    toast.success('Mapa byla odstraněna');
                     fetchMapList();
                     setIsOpen(false);
                   } catch (_) {}
