@@ -19,19 +19,19 @@ export function formatSensorData(
   switch (parameter) {
     case DisplayParameter.Temperature:
       return data.temperature !== null && data.temperature !== undefined
-        ? data.temperature.toFixed(2) + '°C'
+        ? Number(data.temperature.toFixed(2)) + '°C'
         : NOT_AVAILABLE_TEXT;
     case DisplayParameter.Humidity:
       return data.humidity !== null && data.humidity !== undefined
-        ? data.humidity + '%'
+        ? Number(data.humidity.toFixed(2)) + '%'
         : NOT_AVAILABLE_TEXT;
     case DisplayParameter.RSSI:
       return data.rssi !== null && data.rssi !== undefined
-        ? data.rssi + 'dB'
+        ? Number(data.rssi.toFixed(2)) + 'dB'
         : NOT_AVAILABLE_TEXT;
     case DisplayParameter.Voltage:
       return data.voltage !== null && data.voltage !== undefined
-        ? data.voltage + 'V'
+        ? Number(data.voltage.toFixed(2)) + 'V'
         : NOT_AVAILABLE_TEXT;
   }
 }
@@ -43,13 +43,13 @@ export function formatSensorValue(
   if (value === null) return NOT_AVAILABLE_TEXT;
   switch (parameter) {
     case DataParameter.Temperature:
-      return value.toFixed(2) + '°C';
+      return Number(value.toFixed(2)) + '°C';
     case DataParameter.Humidity:
-      return value.toFixed(2) + '%';
+      return Number(value.toFixed(2)) + '%';
     case DataParameter.RSSI:
-      return value + 'dB';
+      return Number(value.toFixed(2)) + 'dB';
     case DataParameter.Voltage:
-      return value.toFixed(3) + 'V';
+      return Number(value.toFixed(3)) + 'V';
   }
 }
 
@@ -179,3 +179,8 @@ export const getHomeTimestamp = (): [number, number] => {
   const now = new Date().getTime();
   return [now - 24 * 60 * 60 * 1000, now];
 };
+
+export const avgVal = (arr: number[]) =>
+  arr.reduce((acc, val) => acc + val, 0) / arr.length;
+export const minVal = (arr: number[]) => Math.min(...arr);
+export const maxVal = (arr: number[]) => Math.max(...arr);

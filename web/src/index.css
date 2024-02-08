@@ -673,3 +673,19 @@ label {
   display: flex;
   flex-direction: column;
 }
+
+.group_data_matrix td {
+  @apply p-3 border-gray-300 text-center text-lg;
+}
+
+.group_data_matrix thead tr {
+  @apply border-b border-gray-300;
+}
+
+.group_data_matrix tr td:not(:last-child) {
+  @apply border-r;
+}
+
+.group_data_matrix tr:not(:last-child) {
+  @apply border-b border-gray-300;
+}

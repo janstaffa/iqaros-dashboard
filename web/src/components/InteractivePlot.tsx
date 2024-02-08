@@ -131,7 +131,7 @@ const InteractivePlot: React.FC<InteractivePlotProps> = ({
       });
     }
     setChartData(traces);
-  }, [dataProvider, sensorData, chartedSensors]);
+  }, [dataProvider, sensorData, chartedSensors, includeSensorNameInTraceName]);
 
   return (
     <div className="chart">

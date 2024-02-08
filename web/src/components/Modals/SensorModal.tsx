@@ -101,17 +101,41 @@ const SensorModal: React.FC<SensorModalProps> = ({
         content={
           <>
             <div className="flex-shrink h-full flex flex-col">
-              <div className="flex-shrink">
-                <span className="text-xl pr-2">Název:</span>
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                />
+              <div className="flex-shrink flex flex-row justify-start">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td className="font-bold pr-5 border p-2">Název</td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={nameInput}
+                          onChange={(e) => setNameInput(e.target.value)}
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="font-bold pr-5 border p-2">ID</td>
+                      <td className="border p-2">{sensor.sensor_id}</td>
+                    </tr>
+                    <tr>
+                      <td className="font-bold pr-5 border p-2">Síťové ID</td>
+                      <td className="border p-2">{sensor.network_id}</td>
+                    </tr>
+                    <tr>
+                      <td className="font-bold pr-5 border p-2">
+                        Poslední zpráva
+                      </td>
+                      <td className="border p-2">
+                        {new Date(sensor.last_response).toLocaleString()}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               <div className="flex-grow overflow-y-hidden flex flex-col">
                 <h5 className="text-xl mt-2 mb-1">Skupiny</h5>
-                <div className="h-full flex flex-col overflow-y-auto flex-grow">
+                <div className="h-full flex flex-col overflow-y-auto flex-grow border p-2">
                   {data.groupList.map((g, idx) => {
                     const elementId = `group_${g.group_id}`;
                     return (
@@ -153,37 +177,8 @@ const SensorModal: React.FC<SensorModalProps> = ({
                 </div>
               </div>
             </div>
-            <div className="flex-grow py-6 flex flex-row">
-              <div className="flex-grow flex flex-col">
-                <div className="flex-shrink flex flex-row justify-start pl-16">
-                  <table>
-                    <tbody>
-                      <tr>
-                        <td className="font-bold pr-5">ID:</td>
-                        <td>{sensor.sensor_id}</td>
-                      </tr>
-                      <tr>
-                        <td className="font-bold pr-5">Síťové ID:</td>
-                        <td>{sensor.network_id}</td>
-                      </tr>
-                      <tr>
-                        <td className="font-bold pr-5">Poslední zpráva:</td>
-                        <td>
-                          {new Date(sensor.last_response).toLocaleString()}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex-grow">
-                  <InteractivePlot
-                    chartedSensors={chartedData}
-                    showLegend={true}
-                    includeSensorNameInTraceName={false}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col justify-evenly h-full w-48 flex-shrink gap-4 mx-5">
+            <div className="flex-grow flex flex-col pt-5">
+              <div className="flex flex-row justify-evenly w-full flex-shrink gap-4">
                 {latestData && (
                   <>
                     <div className="text-center">
@@ -234,6 +229,13 @@ const SensorModal: React.FC<SensorModalProps> = ({
                     </div>
                   </>
                 )}
+              </div>
+              <div className="flex-grow flex flex-col">
+                  <InteractivePlot
+                    chartedSensors={chartedData}
+                    showLegend={true}
+                    includeSensorNameInTraceName={false}
+                  />
               </div>
             </div>
           </>

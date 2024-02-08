@@ -25,7 +25,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
       onAfterClose={onClose}
     >
       <div className="w-full h-full relative flex flex-col">
-        <div className="w-full flex flex-row justify-between items-center flex-shrink border-b border-solid mb-2 pb-2 border-gray-300">
+        <div className="w-full flex flex-row justify-between items-center flex-shrink mb-5">
           <h2 className="text-3xl">{title}</h2>
           <button
             onClick={() => handleClose()}
@@ -34,7 +34,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
             <FaTimes size={20} />
           </button>
         </div>
-        <div className="flex-grow flex flex-row overflow-hidden">{content}</div>
+        <div className="flex-grow flex flex-row overflow-hidden gap-10">{content}</div>
         <div className="w-full flex-shrink mt-3 flex flex-row justify-end gap-2">{footer}</div>
       </div>
     </Modal>
