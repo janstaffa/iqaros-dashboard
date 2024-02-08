@@ -271,10 +271,10 @@ label {
 }
 
 .styled_table .row_options {
-  width: fit-content;
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
+  /* width: fit-content; */
+  /* display: flex; */
+  /* flex-direction: row; */
+  /* gap: 5px; */
 }
 .styled_table .row_options svg {
   cursor: pointer;

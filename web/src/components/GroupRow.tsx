@@ -24,9 +24,15 @@ function GroupRow({
         <GrStatusGoodSmall size={25} />
       </td>
       <td>{groupName}</td>
-      <td>{sensors.map((s) => s.sensor_name).join(', ')}</td>
-      <td className="row_options">
-        <MdDelete
+      <td className="overflow-hidden box-border">
+        <span className="inline-block overflow-hidden text-ellipsis whitespace-nowrap max-w-full">
+          {sensors.map((s) => s.sensor_name).join(', ')}
+        </span>
+      </td>
+      <td className="h-full gap-2">
+        <button
+          className="bg-transparent border-none hover:bg-transparent hover:text-gray-700"
+          title="Smazat skupinu"
           onClick={() => {
             const prompt = window.confirm(
               `Opravdu si přejete smazat skupinu ${groupName}?`
@@ -34,10 +40,16 @@ function GroupRow({
             if (!prompt) return;
             removeGroup(groupId);
           }}
-          title="Smazat skupinu"
-        />
-
-        <MdRemoveRedEye title="Zobrazit detaily" onClick={openModal} />
+        >
+          <MdDelete size={26} />
+        </button>
+        <button
+          className="bg-transparent border-none hover:bg-transparent hover:text-gray-700"
+          title="Zobrazit detaily"
+          onClick={openModal}
+        >
+          <MdRemoveRedEye size={26} />
+        </button>
       </td>
     </tr>
   );

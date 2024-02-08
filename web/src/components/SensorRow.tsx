@@ -90,11 +90,13 @@ function SensorCard({ sensor, openModal }: SensorCardProps) {
         {formatSensorData(sensorDataObject, DisplayParameter.RSSI)}
       </td>
       <td className="row_options">
-        <MdRemoveRedEye
+        <button
+          className="bg-transparent border-none hover:bg-transparent hover:text-gray-700"
           title="Zobrazit detaily"
           onClick={openModal}
-          style={{ cursor: 'pointer', fontSize: 26 }}
-        />
+        >
+          <MdRemoveRedEye size={26} />
+        </button>
       </td>
     </tr>
   );
