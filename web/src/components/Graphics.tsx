@@ -3,14 +3,14 @@ import { NOT_AVAILABLE_TEXT } from '../constants';
 import { getColorGradient } from '../utils';
 
 interface MeterProps {
-  value: number | null;
+  value: number | null | undefined;
 }
 export const Thermometer: React.FC<MeterProps> = ({ value }) => {
   const valueDiv = useRef<HTMLDivElement>(null);
 
   const ADJUST_PERCENT = 29.5;
   useEffect(() => {
-    if (!valueDiv.current || value === null) return;
+    if (!valueDiv.current || value === null || value === undefined) return;
     let normalizedValue = value;
     if (value < 0) normalizedValue = 0;
     if (value > 40) normalizedValue = 40;
@@ -27,7 +27,7 @@ export const Thermometer: React.FC<MeterProps> = ({ value }) => {
 
   return (
     <div className="meter_wrap">
-      {value !== null ? (
+      {value !== null && value !== undefined ? (
         <>
           <svg
             shapeRendering="geometricPrecision"
@@ -66,7 +66,7 @@ export const Hygrometer: React.FC<MeterProps> = ({ value }) => {
   const colorDiv = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!rotationDiv.current || !colorDiv.current || value === null) return;
+    if (!rotationDiv.current || !colorDiv.current || value === null || value === undefined) return;
 
     const degrees = ((value - 100) / 100) * 180;
     rotationDiv.current.style.transform = `rotate(${degrees}deg)`;
@@ -77,7 +77,7 @@ export const Hygrometer: React.FC<MeterProps> = ({ value }) => {
 
   return (
     <div className="meter_wrap">
-      {value !== null ? (
+      {value !== null && value !== undefined ? (
         <>
           <svg
             width="100px"

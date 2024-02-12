@@ -5,7 +5,11 @@ import { GrStatusGoodSmall } from 'react-icons/gr';
 import { DataContext } from '../App';
 import InteractivePlot from '../components/InteractivePlot';
 import { ChartedSensor, DataParameter } from '../types';
-import { dataParameterToName, getColorByParameter, getHomeTimestamp } from '../utils';
+import {
+  dataParameterToName,
+  getColorByParameter,
+  getHomeTimestamp,
+} from '../utils';
 
 function Chart() {
   const dataProvider = useContext(DataContext);
@@ -40,9 +44,10 @@ function Chart() {
   const colorPickerRef = useRef<HTMLInputElement | null>(null);
   return (
     <>
-      <div className="page_header">
-        <div className="page_options">
+      <div className="flex flex-row justify-between h-10 mb-3">
+        <div className="flex flex-row items-center gap-1">
           <select
+            className="h-full p-2"
             onChange={(e) => {
               setSelectedSensor(parseInt(e.target.value));
             }}
@@ -60,6 +65,7 @@ function Chart() {
             })}
           </select>
           <select
+            className="h-full p-2"
             value={selectedParameter}
             onChange={(e) => setSelectedParameter(parseInt(e.target.value))}
           >
@@ -77,6 +83,7 @@ function Chart() {
             </option>
           </select>
           <button
+            className="h-full p-2"
             onClick={() => {
               if (selectedSensor === null) return;
               const exists = chartedSensors.find(
@@ -102,8 +109,9 @@ function Chart() {
             Přidat
           </button>
         </div>
-        <div className="page_tools">
+        <div className="flex flex-row items-center gap-1">
           <input
+            className="h-full p-2"
             type="datetime-local"
             value={dateForDateTimeInputValue(dataRange[0])}
             onChange={(e) =>
@@ -118,6 +126,7 @@ function Chart() {
           />
           <GoDash />
           <input
+            className="h-full p-2"
             type="datetime-local"
             value={dateForDateTimeInputValue(dataRange[1])}
             onChange={(e) =>
@@ -130,6 +139,7 @@ function Chart() {
           />
 
           <button
+            className="h-full p-2"
             onClick={() => {
               const homeTimestamp = getHomeTimestamp();
               setDataRange(homeTimestamp);
@@ -139,14 +149,14 @@ function Chart() {
           </button>
         </div>
       </div>
-      <div className="chart_wrap">
+      <div className="flex-grow overflow-hidden flex flex-row">
         <InteractivePlot
           chartedSensors={chartedSensors}
           dataRange={dataRange}
           onRangeChange={(newFrom, newTo) => setDataRange([newFrom, newTo])}
         />
-        <div className="sensor_list">
-          <table>
+        <div className="w-64 h-full box-border overflow-y-auto bg-white">
+          <table className="w-full overflow-x-hidden overflow-y-auto box-border border-collapse">
             <tbody>
               {chartedSensors.map((s, idx) => {
                 const sensor = dataProvider.sensorList.find(
@@ -155,10 +165,10 @@ function Chart() {
                 if (sensor === undefined) return null;
 
                 return (
-                  <tr key={idx}>
-                    <td>
+                  <tr key={idx} className='hover:bg-gray-100'>
+                    <td className="py-2 px-1 box-border  h-full cursor-default">
                       <GrStatusGoodSmall
-                        className="clickable_status"
+                        className="cursor-pointer rounded-full hover:border-2 hover:border-black"
                         size={25}
                         color={s.color}
                         onClick={() => {
@@ -168,9 +178,13 @@ function Chart() {
                         }}
                       />
                     </td>
-                    <td>{sensor.sensor_name}</td>
-                    <td>{dataParameterToName(s.parameter)}</td>
-                    <td>
+                    <td className="py-2 px-1 box-border  h-full cursor-default">
+                      {sensor.sensor_name}
+                    </td>
+                    <td className="py-2 px-1 box-border  h-full cursor-default">
+                      {dataParameterToName(s.parameter)}
+                    </td>
+                    <td className="py-2 px-1 box-border  h-full cursor-default">
                       <FaTimes
                         size={15}
                         style={{ cursor: 'pointer' }}

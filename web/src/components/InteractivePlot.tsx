@@ -134,7 +134,7 @@ const InteractivePlot: React.FC<InteractivePlotProps> = ({
   }, [dataProvider, sensorData, chartedSensors, includeSensorNameInTraceName]);
 
   return (
-    <div className="chart">
+    <div className="flex-grow box-border">
       {chartData && (
         <Plot
           onRelayout={(e) => {

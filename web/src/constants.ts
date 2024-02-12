@@ -1,9 +1,7 @@
-import { DataParameter } from "./types";
+import { DataParameter } from './types';
 
-export const API_BASE_PATH = 'http://localhost:4000/api';
-export const APP_API_BASE_PATH = 'http://localhost:4000/app';
-
-export const WS_URL = 'ws://localhost:4040';
+export const API_BASE_PATH = 'http://192.168.1.47:4000/api';
+export const APP_API_BASE_PATH = 'http://192.168.1.47:4000/app';
 
 export enum SensorStatus {
   Online,

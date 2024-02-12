@@ -36,7 +36,7 @@ const DisplayedSensorSVG: React.FC<DisplayedSensorSVGProps> = ({
       : formatSensorData(sensorDataObject, displayParameter);
 
   return (
-    <g onClick={onClick} onMouseDown={onMouseDown} className="displayed_sensor">
+    <g onClick={onClick} onMouseDown={onMouseDown} className="cursor-pointer select-none">
       <circle
         cx={relativePosX}
         cy={relativePosY}

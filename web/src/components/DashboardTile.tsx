@@ -95,7 +95,7 @@ const DashboardTile: React.FC<TileProps> = ({
     }
   }
 
-  let value = 0;
+  let value = null;
   let display = NOT_AVAILABLE_TEXT;
   if (d1 !== null && !Number.isNaN(d1)) {
     if (tile.operation === TileOperation.Display) {
@@ -132,6 +132,7 @@ const DashboardTile: React.FC<TileProps> = ({
         style={{ opacity: isEditing ? 0.3 : 1 }}
       >
         {tile.show_graphic &&
+          value !== null &&
           (tile.parameter === DataParameter.Temperature ? (
             <Thermometer value={value} />
           ) : tile.parameter === DataParameter.Humidity ? (

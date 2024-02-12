@@ -29,7 +29,7 @@ const FlowCard: React.FC<FlowCardProps> = ({
   return (
     <div
       className={
-        'flow_card border p-3 bg-white shadow-sm rounded my-2 flex flex-col' +
+        'flow_card border p-3 bg-white shadow-sm rounded my-2 flex flex-col relative z-10' +
         (!showTail ? ' tail_hidden' : '')
       }
       style={{ display: isVisible ? 'flex' : 'none' }}

@@ -93,9 +93,9 @@ function Heatmap() {
           <MdAdd />
         </button>
       </div>
-      <div className="map_header">
-        <div className="map_tabs_wrap">
-          <div className="map_tabs">
+      <div className="h-14 w-full flex flex-row justify-between">
+        <div className="h-full flex-grow">
+          <div className="h-full w-full flex flex-row gap-1 mr-5">
             {mapList.map((m, idx) => {
               return (
                 <button
@@ -103,7 +103,10 @@ function Heatmap() {
                     setDisplayedMap(m);
                     setDetailMap(m);
                   }}
-                  className={displayedMap?.map_id === m.map_id ? 'active' : ''}
+                  className={
+                    'map_button' +
+                    (displayedMap?.map_id === m.map_id ? ' active' : '')
+                  }
                   key={idx}
                 >
                   {m.map_name}
@@ -112,8 +115,9 @@ function Heatmap() {
             })}
           </div>
         </div>
-        <div className="page_tools">
+        <div className="flex flex-row items-center gap-1">
           <select
+            className="p-2"
             value={colorScheme}
             onChange={(e) => {
               setColorScheme(parseInt(e.target.value) as MapColorScheme);
@@ -123,6 +127,7 @@ function Heatmap() {
             <option value={MapColorScheme.Relative}>Relativní barvy</option>
           </select>
           <select
+            className="p-2"
             value={displayParameter}
             onChange={(e) => {
               const parsedDisplayParameter = parseDisplayParameter(
@@ -166,7 +171,7 @@ function Heatmap() {
           isLoading={isLoadingMap}
         />
       ) : (
-        <div className="map_alert">
+        <div className="w-full h-full flex flex-col items-center text-3xl bg-light-normal">
           <span>
             Žádná mapa -{' '}
             <span

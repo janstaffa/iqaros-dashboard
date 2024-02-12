@@ -12,13 +12,9 @@ import {
   getFullRedisLatestDataKey,
 } from '../constants';
 import { DashboardTilesDBObject, MapsDBObject, SensorDataAll } from '../types';
-import { auth, generateRandomColor } from './utils';
+import { generateRandomColor } from './utils';
 
 export function appApiController(app: Express, db: sqlite.Database) {
-  app.get('/', auth, (req, res) => {
-    res.send('Homepage');
-  });
-
   // === Sensors ===
   app.get('/app/sensorlist', (req, res) => {
     try {

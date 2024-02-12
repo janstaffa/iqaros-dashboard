@@ -138,7 +138,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   if (isLoading)
     return (
-      <div className="interactive_map_wrap">
+      <div className="h-full relative flex flex-col p-2 bg-white border border-gray-300">
         <Bars
           height="80"
           width="80"
@@ -152,14 +152,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     );
   if (!map) return null;
   return (
-    <div className="interactive_map_wrap">
+    <div className="h-full relative flex flex-col p-2 bg-white border border-gray-300">
       <div className="absolute top-3 right-3 z-20 flex flex-row gap-1">
         <button
           onClick={() => {
             setMapZoom(Math.min(mapZoom + ZOOM_FACTOR, MAX_ZOOM));
           }}
         >
-          <MdZoomIn size={30}/>
+          <MdZoomIn size={30} />
         </button>
         <button
           onClick={() => setMapZoom(Math.max(mapZoom - ZOOM_FACTOR, MIN_ZOOM))}
@@ -168,7 +168,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </button>
       </div>
       <div
-        className="interactive_map"
+        className="w-full h-full overflow-auto cursor-grab relative z-10 flex-grow"
         ref={mapRef}
         onMouseMove={(e) => {
           const mapElement = mapRef.current;
@@ -223,6 +223,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <svg
           width={map.image_width * mapZoom}
           height={map.image_height * mapZoom}
+          style={{zIndex: 9}}
+          className='absolute top-0 left-0'
         >
           {displayedSensors.map((s, idx) => (
             <DisplayedSensorSVG
@@ -246,6 +248,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           alt="Map"
           width={map.image_width * mapZoom}
           height={map.image_height * mapZoom}
+          className='absolute top-0 left-0 select-none pointer-events-none'
         />
       </div>
     </div>

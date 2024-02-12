@@ -18,6 +18,7 @@ import fileUpload from 'express-fileupload';
 import { createClient } from 'redis';
 import { appApiController } from './rest/appApiController';
 import { sensorApiController } from './rest/sensorApiController';
+import { webServerController } from './rest/webServerController';
 import { IQAROS_Response } from './types';
 import { dataParameterToKey, parseSensor } from './utils';
 
@@ -181,6 +182,7 @@ export const redisClient = createClient();
   // Add all rest API endpoints
   await sensorApiController(app, db);
   appApiController(app, db);
+  webServerController(app);
 
   app.listen(port, () => {
     console.log(`Listening on port ${port}`);

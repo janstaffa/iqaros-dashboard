@@ -89,7 +89,7 @@ function SensorCard({ sensor, openModal }: SensorCardProps) {
       <td style={{ color: signalColor }}>
         {formatSensorData(sensorDataObject, DisplayParameter.RSSI)}
       </td>
-      <td className="row_options">
+      <td>
         <button
           className="bg-transparent border-none hover:bg-transparent hover:text-gray-700"
           title="Zobrazit detaily"

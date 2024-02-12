@@ -220,7 +220,7 @@ const MapModal: React.FC<MapModalProps> = ({
           </div>
           <div className="flex-grow overflow-y-hidden flex flex-col">
             {!isNewMap && (
-              <div className="map_wrap">
+              <div className="flex-grow">
                 {detailMap && (
                   <InteractiveMap
                     map={detailMap}

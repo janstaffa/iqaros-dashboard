@@ -37,10 +37,10 @@ export function formatSensorData(
 }
 
 export function formatSensorValue(
-  value: number | null,
+  value: number | null | undefined,
   parameter: DataParameter
 ) {
-  if (value === null) return NOT_AVAILABLE_TEXT;
+  if (value === null || value === undefined) return NOT_AVAILABLE_TEXT;
   switch (parameter) {
     case DataParameter.Temperature:
       return Number(value.toFixed(2)) + '°C';

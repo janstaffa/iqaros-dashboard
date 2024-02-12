@@ -157,8 +157,10 @@ const GroupModal: React.FC<GroupModalProps> = ({
                   <tr>
                     <td className="font-bold pr-5 border p-2">Barva</td>
                     <td className="pr-5 border p-2">
+                      {/* <HexColorPicker color={groupColorInput} onChange={(color) => setGroupColorInput(color)} />; */}
                       <input
                         type="color"
+                        className='cursor-pointer'
                         value={groupColorInput}
                         onChange={(e) => setGroupColorInput(e.target.value)}
                       />

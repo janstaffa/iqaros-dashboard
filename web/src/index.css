@@ -9,6 +9,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix Tailwind base styles */
+img,
+video {
+  max-width: none !important;
+}
+
 /* === GENERAL STYLES ===  */
 * {
   box-sizing: border-box;
@@ -66,14 +72,11 @@ main {
   z-index: 9999;
 }
 
-/* Fix Tailwind base styles */
-img,
-video {
-  max-width: none !important;
+label {
+  margin-right: 10px;
 }
 
-/* === INPUTS === */
-input[type='text'],
+input,
 select,
 button {
   border: 1px solid #ccc;
@@ -88,6 +91,26 @@ button:hover {
 input[type='text']:focus,
 select:focus {
   border-color: #aaa;
+}
+
+.error {
+  color: red;
+}
+
+.link {
+  text-decoration: underline;
+  font-weight: bold;
+  color: black;
+  cursor: pointer;
+}
+
+.link:hover {
+  color: #555;
+}
+
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 /* === NAVBAR === */
@@ -171,6 +194,7 @@ nav a.active:after {
   background-color: var(--background);
 }
 
+/* === STYLED TABLE === */
 .styled_table {
   width: 100%;
   height: 100%;
@@ -203,7 +227,6 @@ nav a.active:after {
 }
 
 .styled_table thead {
-  /* border-bottom: 3px solid #777; */
   font-weight: bold;
   position: sticky;
   top: 0;
@@ -213,43 +236,6 @@ nav a.active:after {
 .styled_table thead tr td {
   padding: 15px 10px;
 }
-
-.floating_buttons {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.floating_buttons button {
-  padding: 0;
-  margin: 0;
-  width: 60px;
-  height: 60px;
-  background-color: var(--accent);
-  transition: 0.2s background;
-  outline: none;
-  border: none;
-  font-size: 40px;
-  color: white;
-  cursor: pointer;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.floating_buttons button:hover {
-  background-color: var(--accent-dark);
-}
-/* .logo {
-  font-size: 20px;
-  color: white;
-  font-weight: bold;
-} */
 
 .sortable_column {
   cursor: pointer;
@@ -267,301 +253,7 @@ nav a.active:after {
   opacity: 1;
 }
 
-label {
-  margin-right: 10px;
-}
-
-.styled_table .row_options {
-  /* width: fit-content; */
-  /* display: flex; */
-  /* flex-direction: row; */
-  /* gap: 5px; */
-}
-.styled_table .row_options svg {
-  cursor: pointer;
-  font-size: 25px;
-}
-
-.map_header {
-  height: 50px;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
-.map_tabs_wrap {
-  height: 100%;
-  flex-grow: 1;
-}
-.map_tabs {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  gap: 3px;
-  height: 100%;
-  margin-right: 20px;
-}
-
-.map_tabs button {
-  padding: 5px 25px;
-  box-sizing: border-box;
-  border-radius: 0;
-  border: none;
-  cursor: pointer;
-}
-
-.map_tabs button.active {
-  background-color: white;
-  border-left: 1px;
-  border-top: 1px;
-  border-right: 1px;
-  border-bottom: 0px;
-  border-style: solid;
-  border-color: #ccc;
-  position: relative;
-}
-
-.map_tabs button.active::after {
-  content: '';
-  width: 100%;
-  height: 1px;
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  z-index: 100;
-  background-color: white;
-}
-.map_tools {
-  flex-shrink: 1;
-  min-width: fit-content;
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
-  justify-content: right;
-  height: 100%;
-}
-
-.page_tools select,
-.page_options select,
-.page_tools button,
-.page_options button,
-.page_tools input,
-.page_options input {
-  height: 40px;
-  border: 1px solid #ccc;
-  background-color: white;
-  padding: 5px 10px;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-.page_tools,
-.page_options {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 5px;
-}
-
-/* .map_compartment {
-  display: flex;
-  flex-direction: row;
-  margin-top: 20px;
-  flex-grow: 1;
-  height: 100%;
-  box-sizing: border-box;
-} */
-
-.map_wrap {
-  flex-grow: 1;
-  /* position: relative; */
-}
-
-.error {
-  color: red;
-}
-
-.interactive_map {
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  cursor: grab;
-  position: relative;
-  z-index: 10;
-  flex-grow: 1;
-}
-
-.interactive_map svg {
-  z-index: 9;
-}
-.interactive_map img {
-  user-select: none;
-  pointer-events: none;
-}
-
-.interactive_map * {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.interactive_map_wrap {
-  height: 100%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  background-color: white;
-  border: 1px solid #ccc;
-}
-
-.sensor_list {
-  width: 250px;
-  height: 100%;
-  box-sizing: border-box;
-  overflow-y: auto;
-  background-color: white;
-}
-.sensor_list table {
-  width: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  box-sizing: border-box;
-  border-collapse: collapse;
-}
-.sensor_list table tr td {
-  padding: 10px 5px;
-  box-sizing: border-box;
-  vertical-align: middle;
-  height: 100%;
-  cursor: default;
-}
-.sensor_list table tr:hover {
-  background-color: #e0e0e0;
-}
-
-.sensor_list table td label {
-  cursor: pointer;
-}
-
-.displayed_sensor {
-  cursor: pointer;
-  user-select: none;
-}
-
-.sensor_list_wrap {
-  overflow-x: hidden;
-  overflow-y: auto;
-  width: 100%;
-  height: 100%;
-}
-
-.chart_wrap {
-  flex-grow: 1;
-  overflow: hidden;
-  /* width: 100%;
-  height: 100%; */
-  display: flex;
-  flex-direction: row;
-}
-
-.chart_header {
-  width: 100%;
-  height: 40px;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-.chart_tools {
-  height: 100%;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-}
-.chart_tools div {
-  width: max-content;
-}
-.chart_tools * {
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.chart {
-  flex-grow: 1;
-  box-sizing: border-box;
-}
-
-.page_wrap {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-}
-.page_header {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  height: 40px;
-  margin-bottom: 10px;
-}
-.page_header button {
-  height: 100%;
-  padding: 10px;
-}
-.page {
-  overflow: auto;
-}
-
-.map_alert {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  background-color: #f3f3f3;
-}
-
-.link {
-  text-decoration: underline;
-  font-weight: bold;
-  color: black;
-  cursor: pointer;
-}
-
-.link:hover {
-  color: #555;
-}
-
-.disabled {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.chart_options {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-  gap: 5px;
-}
-
-.group_list {
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.clickable_status {
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.clickable_status:hover {
-  border: 2px solid black;
-}
-
+/* === METERS === */
 .meter_wrap {
   width: fit-content;
   height: fit-content;
@@ -639,17 +331,56 @@ label {
   z-index: 0;
 }
 
-.sensor_detail_data_row {
-  padding: 10px 20px;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-evenly;
-  gap: 20px;
-}
-.sensor_detail_data_row > div {
+/* === MISCELANEOUS === */
+.floating_buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+.floating_buttons button {
+  padding: 0;
+  margin: 0;
+  width: 60px;
+  height: 60px;
+  background-color: var(--accent);
+  transition: 0.2s background;
+  outline: none;
+  border: none;
+  font-size: 40px;
+  color: white;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.floating_buttons button:hover {
+  background-color: var(--accent-dark);
+}
+
+.map_button {
+  @apply py-1 px-6 box-border rounded-none border-none cursor-pointer;
+}
+
+.map_button.active {
+  @apply bg-white border-l border-t border-r border-b-0 border-solid border-gray-300 relative;
+}
+
+.map_button.active::after {
+  content: '';
+  width: 100%;
+  height: 1px;
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  z-index: 100;
+  background-color: white;
 }
 
 .group_data_matrix td {
@@ -668,10 +399,6 @@ label {
   @apply border-b border-gray-300;
 }
 
-.flow_card {
-  position: relative;
-  z-index: 100;
-}
 .flow_card:not(.tail_hidden)::before {
   content: '';
   position: absolute;
