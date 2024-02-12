@@ -1,8 +1,9 @@
 import { Express, Request } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { Client as PostgresClient, QueryResult } from 'pg';
+import format from 'pg-format';
 import sharp from 'sharp';
-import sqlite from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import { redisClient } from '..';
 import {
@@ -14,257 +15,234 @@ import {
 import { DashboardTilesDBObject, MapsDBObject, SensorDataAll } from '../types';
 import { generateRandomColor } from './utils';
 
-export function appApiController(app: Express, db: sqlite.Database) {
+export function appApiController(app: Express, dbClient: PostgresClient) {
   // === Sensors ===
-  app.get('/app/sensorlist', (req, res) => {
+  app.get('/app/sensorlist', async (req, res) => {
     try {
-      db.all('SELECT * FROM sensors', async (err, rows: any) => {
-        const sensors: any[] = [];
+      const sensor_rows = await dbClient.query('SELECT * FROM sensors');
+      const sensors: any[] = [];
 
-        for (const row of rows) {
-          const sensorId = row['sensor_id'];
-          const groups = await new Promise<[]>((res, rej) => {
-            db.all(
-              `SELECT sensor_groups.group_id AS group_id, sensor_groups.group_name AS group_name, sensor_groups.group_color AS group_color
+      for (const row of sensor_rows.rows) {
+        const sensorId = row['sensor_id'];
+        const groups = await dbClient.query(
+          `SELECT sensor_groups.group_id AS group_id, sensor_groups.group_name AS group_name, sensor_groups.group_color AS group_color
 			 FROM sensors_in_groups
 			 INNER JOIN sensor_groups
 			 	ON sensors_in_groups.group_id = sensor_groups.group_id
-			 WHERE sensors_in_groups.sensor_id = ?`,
-              sensorId,
-              (err, rows: any) => {
-                if (err) return rej(err);
-                res(rows);
-              }
-            );
-          });
+			 WHERE sensors_in_groups.sensor_id = $1`,
+          [sensorId]
+        );
 
-          const sensorData: SensorDataAll = {
-            temperature: {
-              value: null,
-              timestamp: null,
-            },
-            humidity: {
-              value: null,
-              timestamp: null,
-            },
-            rssi: {
-              value: null,
-              timestamp: null,
-            },
-            voltage: {
-              value: null,
-              timestamp: null,
-            },
-          };
-
-          // Get latest data
-          for (const key of DATA_PARAMETER_KEYS) {
-            const redisKey = getFullRedisLatestDataKey(sensorId, key);
-            const latestData = await redisClient.hGetAll(redisKey);
-            if (
-              latestData.value !== undefined &&
-              latestData.timestamp !== undefined
-            ) {
-              sensorData[key] = {
-                value: parseFloat(latestData.value),
-                timestamp: parseInt(latestData.timestamp),
-              };
-            }
-          }
-
-          const sensorObj = {
-            ...row,
-            data: sensorData,
-            groups: [...groups],
-          };
-
-          sensors.push(sensorObj);
-        }
-        const response = {
-          status: 'ok',
-          data: sensors,
+        const sensorData: SensorDataAll = {
+          temperature: {
+            value: null,
+            timestamp: null,
+          },
+          humidity: {
+            value: null,
+            timestamp: null,
+          },
+          rssi: {
+            value: null,
+            timestamp: null,
+          },
+          voltage: {
+            value: null,
+            timestamp: null,
+          },
         };
 
-        res.json(response);
-      });
-      return;
+        // Get latest data
+        for (const key of DATA_PARAMETER_KEYS) {
+          const redisKey = getFullRedisLatestDataKey(sensorId, key);
+          const latestData = await redisClient.hGetAll(redisKey);
+          if (
+            latestData.value !== undefined &&
+            latestData.timestamp !== undefined
+          ) {
+            sensorData[key] = {
+              value: parseFloat(latestData.value),
+              timestamp: parseInt(latestData.timestamp),
+            };
+          }
+        }
+
+        const sensorObj = {
+          ...row,
+          data: sensorData,
+          groups: [...groups.rows],
+        };
+
+        sensors.push(sensorObj);
+      }
+
+      const response = {
+        status: 'ok',
+        data: sensors,
+      };
+
+      res.json(response);
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to get sensor list' });
     }
   });
 
-  app.post('/app/edit_sensor', (req, res) => {
+  app.post('/app/edit_sensor', async (req, res) => {
     const { sensorId, newSensorName, newCheckedGroups } = req.body;
     try {
-      db.run(
-        'UPDATE sensors SET sensor_name = ? WHERE sensor_id = ?',
-        newSensorName,
-        sensorId
+      dbClient.query(
+        'UPDATE sensors SET sensor_name = $1 WHERE sensor_id = $2',
+        [newSensorName, sensorId]
       );
 
-      db.all(
-        'SELECT * FROM sensors_in_groups WHERE sensor_id = ?',
-        sensorId,
-        (err: Error, rows: any) => {
-          const to_remove = [];
-          let to_add = [...newCheckedGroups];
+      const group_rows = await dbClient.query(
+        'SELECT * FROM sensors_in_groups WHERE sensor_id = $1',
+        [sensorId]
+      );
+      const to_remove = [];
+      let to_add = [...newCheckedGroups];
 
-          for (const row of rows) {
-            // Sensor should stay in this group
-            if (newCheckedGroups.includes(row.group_id)) {
-              to_add = to_add.filter((x) => x !== row.group_id);
-            }
-            // Sensor should be removed from this group
-            else {
-              to_remove.push(row.group_id);
-            }
-          }
-
-          if (to_remove.length > 0) {
-            const removeQueryPlaceholders = new Array(to_remove.length)
-              .fill('?')
-              .join(',');
-            const remove_query = `DELETE FROM sensors_in_groups WHERE sensor_id = ? AND group_id IN (${removeQueryPlaceholders})`;
-            db.run(remove_query, sensorId, ...to_remove);
-          }
-
-          if (to_add.length > 0) {
-            let rowValuePlaceholders = to_add.map(() => '(?, ?)').join(', ');
-            let query =
-              'INSERT INTO sensors_in_groups (sensor_id, group_id) VALUES ' +
-              rowValuePlaceholders;
-
-            const values = [];
-            for (const gId of to_add) values.push(sensorId, gId);
-
-            db.run(query, values);
-          }
+      for (const row of group_rows.rows) {
+        // Sensor should stay in this group
+        if (newCheckedGroups.includes(row.group_id)) {
+          to_add = to_add.filter((x) => x !== row.group_id);
         }
-      );
-      return res.json({ status: 'ok' });
+        // Sensor should be removed from this group
+        else {
+          to_remove.push(row.group_id);
+        }
+      }
+
+      if (to_remove.length > 0) {
+        dbClient.query(
+          `DELETE FROM sensors_in_groups WHERE sensor_id = $1 AND group_id = ANY($2::int[])`,
+          [sensorId, to_remove]
+        );
+      }
+
+      if (to_add.length > 0) {
+        const values = [];
+        for (const gId of to_add) values.push([sensorId, gId]);
+
+        const query = format(
+          `INSERT INTO sensors_in_groups (sensor_id, group_id) VALUES %L`,
+          values
+        );
+        dbClient.query(query);
+        // db.run(query, values);
+      }
+      res.json({ status: 'ok' });
     } catch (e) {
       console.error(e);
-      return res.json({ status: 'err', message: e });
+      res.json({ status: 'err', message: 'Failed to edit sensor' });
     }
   });
 
   // === Sensor groups ===
   const getUniqueGroupName = async (name: string) => {
-    return new Promise((res, rej) => {
-      db.all('SELECT group_name from sensor_groups', (err, rows: any) => {
-        if (err) return rej(err);
-
-        let finalName = name;
-        let num = 1;
-        while (rows.find((x: any) => x['group_name'] == finalName)) {
-          ++num;
-          finalName = name + ' ' + num;
-        }
-        res(finalName);
-      });
-    });
+    try {
+      const groupNames = await dbClient.query(
+        'SELECT group_name from sensor_groups'
+      );
+      let finalName = name;
+      let num = 1;
+      while (groupNames.rows.find((x: any) => x['group_name'] == finalName)) {
+        ++num;
+        finalName = name + ' ' + num;
+      }
+      return finalName;
+    } catch (e) {
+      throw e;
+    }
   };
 
-  app.get('/app/grouplist', (req, res) => {
+  app.get('/app/grouplist', async (req, res) => {
     try {
-      db.all(
-        'SELECT * FROM sensor_groups ORDER BY group_name;',
-        async (err, rows: any) => {
-          const groups: any[] = [];
-
-          for (const row of rows) {
-            const sensors = await new Promise<[]>((res, rej) => {
-              db.all(
-                `SELECT sensors.sensor_id AS sensor_id, sensors.network_id as network_id, sensors.sensor_name AS sensor_name
-			   FROM sensors_in_groups
-			   INNER JOIN sensors
-			   	ON sensors_in_groups.sensor_id = sensors.sensor_id
-			   WHERE sensors_in_groups.group_id = ?`,
-                row['group_id'],
-                (err, rows2: any) => {
-                  if (err) return rej(err);
-                  res(rows2);
-                }
-              );
-            });
-            const group_data = { ...row, sensors };
-            groups.push(group_data);
-          }
-          const response = {
-            status: 'ok',
-            data: groups,
-          };
-
-          res.json(response);
-        }
+      const groupRows = await dbClient.query(
+        'SELECT * FROM sensor_groups ORDER BY group_name ASC'
       );
-      return;
+      const groups: any[] = [];
+      for (const row of groupRows.rows) {
+        const sensors = await dbClient.query(
+          `SELECT sensors.sensor_id AS sensor_id, sensors.network_id as network_id, sensors.sensor_name AS sensor_name
+			     FROM sensors_in_groups
+			     INNER JOIN sensors
+			   	 ON sensors_in_groups.sensor_id = sensors.sensor_id
+			     WHERE sensors_in_groups.group_id = $1`,
+          [row['group_id']]
+        );
+        const group_data = { ...row, sensors: sensors.rows };
+        groups.push(group_data);
+      }
+      const response = {
+        status: 'ok',
+        data: groups,
+      };
+
+      res.json(response);
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to list messages' });
     }
   });
 
   app.post('/app/newgroup', async (req, res) => {
-    const newGroupName = await getUniqueGroupName(NEW_GROUP_NAME_TEMPLATE);
-    const newGroupColor = generateRandomColor();
-    db.all(
-      'INSERT INTO sensor_groups (group_name, group_color) VALUES (?, ?) RETURNING *',
-      newGroupName,
-      newGroupColor,
-      (err: any, rows: any) => {
-        res.json({
-          status: 'ok',
-          data: { ...rows[0], sensors: [] },
-        });
-      }
-    );
+    try {
+      const newGroupName = await getUniqueGroupName(NEW_GROUP_NAME_TEMPLATE);
+      const newGroupColor = generateRandomColor();
+      const newGroup = await dbClient.query(
+        'INSERT INTO sensor_groups (group_name, group_color) VALUES ($1, $2) RETURNING *',
+        [newGroupName, newGroupColor]
+      );
+      res.json({
+        status: 'ok',
+        data: { ...newGroup.rows[0], sensors: [] },
+      });
+    } catch (e) {
+      console.error(e);
+      res.json({
+        status: 'err',
+        message: 'Failed to create new group',
+      });
+    }
   });
 
-  app.post('/app/removegroup', (req, res) => {
+  app.post('/app/removegroup', async (req, res) => {
     try {
       const { groupId } = req.body;
 
-      db.run(
-        `DELETE
-		 FROM sensor_groups
-	     WHERE sensor_groups.group_id = ?`,
-        groupId
+      await dbClient.query(
+        `DELETE FROM sensor_groups WHERE sensor_groups.group_id = $1`,
+        [groupId]
       );
-      db.run(
-        `DELETE
-		 FROM sensors_in_groups
-	     WHERE group_id = ?`,
-        groupId
-      );
+      //   db.run(
+      //     `DELETE
+      //  FROM sensors_in_groups
+      //    WHERE group_id = ?`,
+      //     groupId
+      //   );
 
-      return res.json({ status: 'ok' });
+      res.json({ status: 'ok' });
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to remove group' });
     }
   });
-  app.post('/app/editgroup', (req, res) => {
+  app.post('/app/editgroup', async (req, res) => {
     const { groupId, newName, newColor } = req.body;
 
     try {
-      db.all(
-        'UPDATE sensor_groups SET group_name = ?, group_color = ? WHERE group_id = ? RETURNING *',
-        newName,
-        newColor,
-        groupId,
-        (err: any, rows: any) => {
-          if (err) {
-            console.log(err);
-            res.json({ status: 'err', message: 'Failed to update group' });
-          }
-          res.json({
-            status: 'ok',
-            data: { ...rows[0] },
-          });
-        }
+      dbClient.query(
+        `UPDATE sensor_groups SET group_name = $1, group_color = $2 WHERE group_id = $3`,
+        [newName, newColor, groupId]
       );
-      return;
+      res.json({
+        status: 'ok',
+      });
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to edit group' });
     }
   });
 
@@ -306,211 +284,201 @@ export function appApiController(app: Express, db: sqlite.Database) {
       fs.writeFile(newFilePath, file.data, { encoding: 'binary' }, (err) => {
         sharp(newFilePath)
           .metadata()
-          .then((meta) => {
+          .then(async (meta) => {
             if (meta.width == undefined || meta.height == undefined)
               return res.json({
                 status: 'err',
                 message: 'Invalid image.',
               });
 
-            const timestamp = new Date().getTime();
-            db.run(
-              'INSERT INTO maps (map_name, image_id, image_width, image_height, original_image_name, image_extension, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)',
-              mapName,
-              newFileUuid,
-              meta.width,
-              meta.height,
-              originalFileName,
-              extension,
-              timestamp,
-              (err: any) => {
-                if (err)
-                  res.json({
-                    status: 'err',
-                    message: 'Failed to insert into database.',
-                  });
+            const timestamp = new Date();
 
-                res.json({
-                  status: 'ok',
-                });
-              }
-            );
-            return;
+            try {
+              await dbClient.query(
+                `INSERT INTO maps (map_name, image_id, image_width, image_height, original_image_name, image_extension, timestamp)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                  mapName,
+                  newFileUuid,
+                  meta.width,
+                  meta.height,
+                  originalFileName,
+                  extension,
+                  timestamp,
+                ]
+              );
+              res.json({
+                status: 'ok',
+              });
+            } catch (e) {
+              console.error(e);
+              res.json({ status: 'err', message: 'Failed to create new map' });
+            }
           })
           .catch((err) => {
+            console.error(err);
             res.json({
               status: 'err',
               message: 'Uploaded file must be an image.',
             });
-            console.error(err);
           });
       });
-      return;
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to create new map' });
     }
   });
 
-  app.get('/app/maplist', (req, res) => {
-    db.all(
-      'SELECT * FROM maps ORDER BY timestamp DESC',
-      async (err, ms: MapsDBObject[]) => {
-        if (err) {
-          console.error(err);
-          return res.json({ status: 'err', message: 'Failed to fetch maps.' });
-        }
+  app.get('/app/maplist', async (req, res) => {
+    try {
+      const mapRows = await dbClient.query(
+        'SELECT * FROM maps ORDER BY timestamp DESC'
+      );
 
-        const maps: any[] = [];
+      const maps: any[] = [];
 
-        for (const m of ms) {
-          try {
-            const sensors = await new Promise((res, rej) => {
-              db.all(
-                `SELECT sensors.sensor_id, sensors.network_id, sensors.sensor_name, sensor_map_positions.pos_x, sensor_map_positions.pos_y
+      for (const m of mapRows.rows) {
+        try {
+          const sensors: QueryResult<{
+            sensor_id: number;
+            network_id: number;
+            sensor_name: string;
+            pos_x: number;
+            pos_y: number;
+          }> = await dbClient.query(
+            `SELECT sensors.sensor_id, sensors.network_id, sensors.sensor_name, sensor_map_positions.pos_x, sensor_map_positions.pos_y
                FROM sensor_map_positions
                INNER JOIN sensors
                ON sensor_map_positions.sensor_id = sensors.sensor_id
-               WHERE map_id = ?`,
-                m.map_id,
-                async (
-                  err,
-                  sensors: {
-                    sensor_id: number;
-                    network_id: number;
-                    sensor_name: string;
-                    pos_x: number;
-                    pos_y: number;
-                  }[]
-                ) => {
-                  if (err) return rej(err);
-
-                  const restructuredSensors = sensors.map(async (s) => {
-                    const sensorData: SensorDataAll = {
-                      temperature: {
-                        value: null,
-                        timestamp: null,
-                      },
-                      humidity: {
-                        value: null,
-                        timestamp: null,
-                      },
-                      rssi: {
-                        value: null,
-                        timestamp: null,
-                      },
-                      voltage: {
-                        value: null,
-                        timestamp: null,
-                      },
-                    };
-
-                    // Get latest data
-                    for (const key of DATA_PARAMETER_KEYS) {
-                      const redisKey = getFullRedisLatestDataKey(
-                        s.sensor_id,
-                        key
-                      );
-                      const latestData = await redisClient.hGetAll(redisKey);
-                      if (
-                        latestData.value !== undefined &&
-                        latestData.timestamp !== undefined
-                      ) {
-                        sensorData[key] = {
-                          value: parseFloat(latestData.value),
-                          timestamp: parseInt(latestData.timestamp),
-                        };
-                      }
-                    }
-
-                    return {
-                      sensor: {
-                        sensor_id: s['sensor_id'],
-                        network_id: s['network_id'],
-                        sensor_name: s['sensor_name'],
-                      },
-                      pos_x: s['pos_x'],
-                      pos_y: s['pos_y'],
-                      data: sensorData,
-                    };
-                  });
-                  const resolvedSensors = await Promise.all(
-                    restructuredSensors
-                  );
-                  res(resolvedSensors);
-                }
-              );
-            });
-
-            const map = {
-              ...m,
-              sensors,
+               WHERE map_id = $1`,
+            [m.map_id]
+          );
+          const restructuredSensors = sensors.rows.map(async (s) => {
+            const sensorData: SensorDataAll = {
+              temperature: {
+                value: null,
+                timestamp: null,
+              },
+              humidity: {
+                value: null,
+                timestamp: null,
+              },
+              rssi: {
+                value: null,
+                timestamp: null,
+              },
+              voltage: {
+                value: null,
+                timestamp: null,
+              },
             };
-            maps.push(map);
-          } catch (e) {
-            console.log(e);
-            return null;
-          }
+
+            // Get latest data
+            for (const key of DATA_PARAMETER_KEYS) {
+              const redisKey = getFullRedisLatestDataKey(s.sensor_id, key);
+              const latestData = await redisClient.hGetAll(redisKey);
+              if (
+                latestData.value !== undefined &&
+                latestData.timestamp !== undefined
+              ) {
+                sensorData[key] = {
+                  value: parseFloat(latestData.value),
+                  timestamp: parseInt(latestData.timestamp),
+                };
+              }
+            }
+
+            return {
+              sensor: {
+                sensor_id: s.sensor_id,
+                network_id: s.network_id,
+                sensor_name: s.sensor_name,
+              },
+              pos_x: s.pos_x,
+              pos_y: s.pos_y,
+              data: sensorData,
+            };
+          });
+
+          const resolvedSensors = await Promise.all(restructuredSensors);
+
+          const map = {
+            ...m,
+            sensors: resolvedSensors,
+          };
+          maps.push(map);
+        } catch (e) {
+          console.log(e);
+          return null;
         }
-        const response = {
-          status: 'ok',
-          data: maps,
-        };
-        return res.json(response);
       }
-    );
-    return;
+      const response = {
+        status: 'ok',
+        data: maps,
+      };
+      res.json(response);
+    } catch (e) {
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to get map list' });
+    }
   });
 
-  app.get('/app/mapimage/:mapId', (req, res) => {
+  app.get('/app/mapimage/:mapId', async (req, res) => {
     const mapId = req.params.mapId;
-    if (!mapId) res.json({ status: 'err', message: 'No map ID specified.' });
-    db.all('SELECT * FROM maps WHERE map_id = ?', mapId, (err, rows) => {
-      if (rows.length === 0)
+    if (!mapId) res.json({ status: 'err', message: 'No map ID specified' });
+    try {
+      const map: QueryResult<MapsDBObject> = await dbClient.query(
+        'SELECT * FROM maps WHERE map_id = $1',
+        [mapId]
+      );
+      if (map.rowCount === 0)
         return res.json({
           status: 'err',
-          message: 'Requested map does not exist.',
+          message: 'Requested map does not exist',
         });
-      const result: any = rows[0];
+      const result = map.rows[0];
       const reqFilePath = path.join(
         __dirname,
         '../..',
         MAP_DIRECTORY_PATH,
-        result['image_id'] + '.' + result['image_extension']
+        result.image_id + '.' + result.image_extension
       );
-      return res.sendFile(reqFilePath);
-    });
-  });
-
-  app.post('/app/removemap', (req, res) => {
-    try {
-      const { mapId } = req.body;
-
-      db.all(
-        `DELETE
-		     FROM maps
-	       WHERE map_id = ?
-         RETURNING *`,
-        mapId,
-        (err, rows: MapsDBObject[]) => {
-          if (!err && rows.length === 1) {
-            const map = rows[0];
-
-            const filePath = path.join(
-              MAP_DIRECTORY_PATH,
-              map.image_id + '.' + map.image_extension
-            );
-            fs.unlinkSync(filePath);
-          }
-        }
-      );
-
-      return res.json({ status: 'ok' });
+      res.sendFile(reqFilePath);
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to get map' });
     }
   });
 
-  app.post('/app/editmap', (req, res) => {
+  app.post('/app/removemap', async (req, res) => {
+    try {
+      const { mapId } = req.body;
+
+      const mapResult: QueryResult<MapsDBObject> = await dbClient.query(
+        `DELETE FROM maps WHERE map_id = $1 RETURNING *`,
+        [mapId]
+      );
+      if (mapResult.rowCount === 0)
+        return res.json({
+          status: 'err',
+          message: 'Failed to remove map, map does not exist',
+        });
+
+      const map = mapResult.rows[0];
+
+      const filePath = path.join(
+        MAP_DIRECTORY_PATH,
+        map.image_id + '.' + map.image_extension
+      );
+      fs.unlinkSync(filePath);
+      res.json({ status: 'ok' });
+    } catch (e) {
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to remove map' });
+    }
+  });
+
+  app.post('/app/editmap', async (req, res) => {
     try {
       const {
         mapId,
@@ -522,43 +490,34 @@ export function appApiController(app: Express, db: sqlite.Database) {
         newSensors: { sensorId: number; pos_x: number; pos_y: number }[];
       } = req.body;
 
-      db.serialize(() => {
-        db.run(
-          `UPDATE maps
-         SET map_name = ?
-         WHERE map_id = ?`,
-          newMapName,
-          mapId
-        );
+      await dbClient.query(`UPDATE maps SET map_name = $1 WHERE map_id = $2`, [
+        newMapName,
+        mapId,
+      ]);
+      await dbClient.query(
+        `DELETE FROM sensor_map_positions WHERE map_id = $1`,
+        [mapId]
+      );
 
-        db.run(
-          `DELETE FROM sensor_map_positions
-         WHERE map_id = ?`,
-          mapId
-        );
+      const values = [];
+      for (const s of newSensors)
+        values.push([s.sensorId, mapId, s.pos_x, s.pos_y]);
 
-        let rowValuePlaceholders = newSensors
-          .map(() => '(?, ?, ?, ?)')
-          .join(', ');
-        let query =
-          'INSERT INTO sensor_map_positions (sensor_id, map_id, pos_x, pos_y) VALUES ' +
-          rowValuePlaceholders;
+      const query = format(
+        `INSERT INTO sensor_map_positions (sensor_id, map_id, pos_x, pos_y) VALUES %L`,
+        values
+      );
+      await dbClient.query(query);
 
-        const values = [];
-        for (const s of newSensors)
-          values.push(s.sensorId, mapId, s.pos_x, s.pos_y);
-
-        db.run(query, values);
-      });
-
-      return res.json({ status: 'ok' });
+      res.json({ status: 'ok' });
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to edit map' });
     }
   });
 
   // === Tiles ===
-  app.post('/app/posttile', (req: Request, res) => {
+  app.post('/app/posttile', async (req: Request, res) => {
     try {
       const {
         ID,
@@ -590,69 +549,44 @@ export function appApiController(app: Express, db: sqlite.Database) {
         });
 
       if (ID !== undefined && ID !== null) {
-        db.all(
-          `SELECT *
-        FROM dashboard_tiles
-        WHERE ID = ?`,
-          ID,
-          (err, rows) => {
-            if (err) {
-              console.error(err);
-              return res.json({
-                status: 'err',
-                message: 'Failed to get from database',
-              });
-            }
-
-            if (rows.length === 0) {
-              return res.json({
-                status: 'err',
-                message: 'Tile with this ID doesnt exist',
-              });
-            }
-            db.run(
-              `UPDATE dashboard_tiles 
-            SET title = ?, arg1 = ?, arg1_type = ?, arg1_value = ?, operation = ?, parameter = ?, arg2 = ?, arg2_type = ?, arg2_value = ?, show_graphic = ?
-              WHERE ID = ?
-              `,
-              [
-                title,
-                arg1,
-                arg1_type,
-                arg1_value,
-                operation,
-                parameter,
-                arg2,
-                arg2_type,
-                arg2_value,
-                show_graphic,
-                ID,
-              ],
-              (err) => {
-                if (err) {
-                  console.error(err);
-                  return res.json({
-                    status: 'err',
-                    message: 'Failed to update database',
-                  });
-                }
-                return res.json({
-                  status: 'ok',
-                });
-              }
-            );
-            return;
-          }
+        const tileResponse = await dbClient.query(
+          `SELECT * FROM dashboard_tiles WHERE "ID" = $1`,
+          [ID]
         );
-        return;
-      } else {
-        db.run(
-          `INSERT
-         INTO dashboard_tiles (title, 'order', arg1, arg1_type, arg1_value, operation, parameter, arg2, arg2_type, arg2_value, show_graphic)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        if (tileResponse.rowCount === 0)
+          return res.json({
+            status: 'err',
+            message: 'Tile with this ID doesnt exist',
+          });
+
+        await dbClient.query(
+          `UPDATE dashboard_tiles 
+                SET title = $1, arg1 = $2, arg1_type = $3, arg1_value = $4, operation = $5, parameter = $6, arg2 = $7, arg2_type = $8, arg2_value = $9, show_graphic = $10
+                WHERE "ID" = $11`,
           [
             title,
-            0,
+            arg1,
+            arg1_type,
+            arg1_value,
+            operation,
+            parameter,
+            arg2,
+            arg2_type,
+            arg2_value,
+            show_graphic,
+            ID,
+          ]
+        );
+        res.json({
+          status: 'ok',
+        });
+      } else {
+        await dbClient.query(
+          `INSERT
+            INTO dashboard_tiles (title, arg1, arg1_type, arg1_value, operation, parameter, arg2, arg2_type, arg2_value, show_graphic)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            title,
             arg1,
             arg1_type,
             arg1_value,
@@ -662,54 +596,40 @@ export function appApiController(app: Express, db: sqlite.Database) {
             arg2_type == undefined ? null : arg2_type,
             arg2_value == undefined ? null : arg2_value,
             show_graphic,
-          ],
-          (err: any) => {
-            if (err)
-              return res.json({
-                status: 'err',
-                message: 'Failed to insert into database.',
-              });
-
-            return res.json({
-              status: 'ok',
-            });
-          }
+          ]
         );
-        return;
+        res.json({
+          status: 'ok',
+        });
       }
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({ status: 'err', message: 'Failed to post tile' });
     }
   });
 
-  app.get('/app/tilelist', (req, res) => {
+  app.get('/app/tilelist', async (req, res) => {
     try {
-      db.all(
-        `SELECT *
-         FROM dashboard_tiles`,
-        (err, rows: DashboardTilesDBObject[]) => {
-          if (err)
-            return res.json({
-              status: 'err',
-              message: 'Failed to get tiles from DB',
-            });
+      const tilesResult: QueryResult<DashboardTilesDBObject> =
+        await dbClient.query(`SELECT * FROM dashboard_tiles`);
 
-          return res.json({
-            status: 'ok',
-            data: rows.map((row: DashboardTilesDBObject) => ({
-              ...row,
-              show_graphic: !!row.show_graphic,
-            })),
-          });
-        }
-      );
-      return;
+      res.json({
+        status: 'ok',
+        data: tilesResult.rows.map((row: DashboardTilesDBObject) => ({
+          ...row,
+          show_graphic: !!row.show_graphic,
+        })),
+      });
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({
+        status: 'err',
+        message: 'Failed to get tiles',
+      });
     }
   });
 
-  app.post('/app/removetile', (req: Request, res) => {
+  app.post('/app/removetile', async (req: Request, res) => {
     try {
       const { tileId } = req.body;
 
@@ -719,26 +639,19 @@ export function appApiController(app: Express, db: sqlite.Database) {
           message: 'Invalid request',
         });
 
-      db.run(
-        `DELETE 
-         FROM dashboard_tiles
-         WHERE ID = ?`,
+      await dbClient.query(`DELETE FROM dashboard_tiles WHERE "ID" = $1`, [
         tileId,
-        (err: any) => {
-          if (err)
-            return res.json({
-              status: 'err',
-              message: 'Failed to remove from database.',
-            });
+      ]);
 
-          return res.json({
-            status: 'ok',
-          });
-        }
-      );
-      return;
+      res.json({
+        status: 'ok',
+      });
     } catch (e) {
-      return res.json({ status: 'err', message: e });
+      console.error(e);
+      res.json({
+        status: 'err',
+        message: 'Failed to remove tile from database',
+      });
     }
   });
 }

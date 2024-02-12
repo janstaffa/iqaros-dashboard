@@ -68,8 +68,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
 
   useEffect(() => {
-    if (map === null) return;
-    const containerWidth = mapRef.current!.clientWidth;
+    if (map === null || mapRef.current === null) return;
+    const containerWidth = mapRef.current.clientWidth;
     setMapZoom(computeZoomFactor(map.image_width, containerWidth));
   }, [map]);
 

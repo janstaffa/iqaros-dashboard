@@ -1,52 +1,36 @@
 import { GrStatusGoodSmall } from 'react-icons/gr';
 import { MdDelete, MdRemoveRedEye } from 'react-icons/md';
-import { BaseSensor } from '../types';
+import { SensorGroup } from '../types';
 
 interface GroupRowProps {
-  groupId: number;
-  groupName: string;
-  groupColor: string;
-  sensors: BaseSensor[];
-  removeGroup: (groupId: number) => void;
-  openModal: () => void;
+  group: SensorGroup;
+  handleRemove: () => void;
+  handleDetail: () => void;
 }
-function GroupRow({
-  groupId,
-  groupColor,
-  groupName,
-  sensors,
-  removeGroup,
-  openModal,
-}: GroupRowProps) {
+function GroupRow({ group, handleRemove, handleDetail }: GroupRowProps) {
   return (
     <tr>
-      <td style={{ color: groupColor }}>
+      <td style={{ color: group.group_color }}>
         <GrStatusGoodSmall size={25} />
       </td>
-      <td>{groupName}</td>
+      <td>{group.group_name}</td>
       <td className="overflow-hidden box-border">
         <span className="inline-block overflow-hidden text-ellipsis whitespace-nowrap max-w-full">
-          {sensors.map((s) => s.sensor_name).join(', ')}
+          {group.sensors.map((s) => s.sensor_name).join(', ')}
         </span>
       </td>
       <td className="h-full gap-2">
         <button
           className="bg-transparent border-none hover:bg-transparent hover:text-gray-700"
           title="Smazat skupinu"
-          onClick={() => {
-            const prompt = window.confirm(
-              `Opravdu si přejete smazat skupinu ${groupName}?`
-            );
-            if (!prompt) return;
-            removeGroup(groupId);
-          }}
+          onClick={handleRemove}
         >
           <MdDelete size={26} />
         </button>
         <button
           className="bg-transparent border-none hover:bg-transparent hover:text-gray-700"
           title="Zobrazit detaily"
-          onClick={openModal}
+          onClick={handleDetail}
         >
           <MdRemoveRedEye size={26} />
         </button>

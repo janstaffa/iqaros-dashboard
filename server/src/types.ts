@@ -61,7 +61,7 @@ export interface MapsDBObject {
   image_height: number;
   original_image_name: string;
   image_extension: string;
-  timestamp: number;
+  timestamp: string;
 }
 
 export interface SensorMapPositionsDBObject {
@@ -93,9 +93,9 @@ export interface SensorDataPayload {
 export interface SensorDataDBObject {
   ID: number;
   sensor_id: number;
-  timestamp: number;
   parameter: string;
   value: number;
+  timestamp: Date;
 }
 
 export interface FetchDataData {

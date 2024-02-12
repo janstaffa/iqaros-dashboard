@@ -74,7 +74,7 @@ function Heatmap() {
   return (
     <>
       <div className="floating_buttons">
-        {detailMap && (
+        {detailMap && mapList.length > 0 && (
           <button
             onClick={() => {
               setIsNewMap(false);
@@ -172,7 +172,7 @@ function Heatmap() {
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center text-3xl bg-light-normal">
-          <span>
+          <span className='pt-20'>
             Žádná mapa -{' '}
             <span
               className="link"

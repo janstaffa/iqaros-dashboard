@@ -31,7 +31,7 @@ export function parseSensor(MQTTsensorData: MQTTSensorData): SensorData {
     networkId: MQTTsensorData.nAdr,
     data: {
       value: MQTTsensorData.sensor.value,
-      timestamp: new Date().getTime(),
+      timestamp: null,
     },
     parameter,
   };

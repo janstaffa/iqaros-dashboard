@@ -1,4 +1,4 @@
-export const BROKER_ADDRESS = 'mqtt://192.168.1.48';
+export const BROKER_ADDRESS = 'mqtt://192.168.1.47';
 export const DB_FILE = './data.db';
 export const MQTT_REQUEST_TOPIC = 'data_push';
 export const MQTT_RESPONSE_TOPIC = 'data_pull';

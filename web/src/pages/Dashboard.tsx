@@ -81,22 +81,39 @@ function Dashboard() {
           <MdAdd />
         </button>
       </div>
-      <div className="flex flex-row flex-wrap gap-2 p-8 overflow-y-auto justify-center">
-        {tileList.map((t, idx) => (
-          <DashboardTile
-            tile={t}
-            sensorData={data.latestSensorData}
-            groupList={data.groupList}
-            isEditing={isEditing}
-            handleRemove={() => removeTile(t.ID)}
-            handleEdit={() => {
-              setEditedTile(t);
-              setModalIsOpen(true);
-            }}
-            key={idx}
-          />
-        ))}
-      </div>
+      {tileList.length > 0 ? (
+        <div className="flex flex-row flex-wrap gap-2 p-8 overflow-y-auto justify-center">
+          {tileList.map((t, idx) => (
+            <DashboardTile
+              tile={t}
+              sensorData={data.latestSensorData}
+              groupList={data.groupList}
+              isEditing={isEditing}
+              handleRemove={() => removeTile(t.ID)}
+              handleEdit={() => {
+                setEditedTile(t);
+                setModalIsOpen(true);
+              }}
+              key={idx}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="w-full h-full flex flex-col items-center text-3xl">
+          <span className="pt-20">
+            Žádné dlaždice -{' '}
+            <span
+              className="link"
+              onClick={() => {
+                setEditedTile(null);
+                setModalIsOpen(true);
+              }}
+            >
+              přidat
+            </span>
+          </span>
+        </div>
+      )}
       <DashboardModal
         isOpen={modalIsOpen}
         setIsOpen={setModalIsOpen}

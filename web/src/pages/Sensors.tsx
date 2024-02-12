@@ -98,7 +98,7 @@ function Sensors() {
                   }}
                   key={i}
                 >
-                  <div className='flex flex-row items-center'>
+                  <div className="flex flex-row items-center">
                     {sh?.columnName}
                     {sh !== null &&
                       (sortOptions.sortPath === sh.sortPath ? (

@@ -251,6 +251,7 @@ const SensorModal: React.FC<SensorModalProps> = ({
               toast.success('Změny byly uloženy');
               setIsOpen(false);
               functions.fetchSensorList();
+              functions.fetchGroupList();
             }}
           >
             Uložit

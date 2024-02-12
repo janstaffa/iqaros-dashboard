@@ -160,7 +160,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
                       {/* <HexColorPicker color={groupColorInput} onChange={(color) => setGroupColorInput(color)} />; */}
                       <input
                         type="color"
-                        className='cursor-pointer'
+                        className="cursor-pointer"
                         value={groupColorInput}
                         onChange={(e) => setGroupColorInput(e.target.value)}
                       />
@@ -185,138 +185,140 @@ const GroupModal: React.FC<GroupModalProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-col flex-grow pr-4">
-            <div className="w-full flex flex-row justify-end gap-3">
-              {displayType === DisplayType.Chart && (
+          {displayedGroup.sensors.length > 0 && (
+            <div className="flex flex-col flex-grow pr-4">
+              <div className="w-full flex flex-row justify-end gap-3">
+                {displayType === DisplayType.Chart && (
+                  <select
+                    onChange={(e) =>
+                      setChartedParameter(parseInt(e.target.value))
+                    }
+                  >
+                    <option value={DataParameter.Temperature}>Teplota</option>
+                    <option value={DataParameter.Humidity}>Vlhkost</option>
+                    <option value={DataParameter.RSSI}>RSSI</option>
+                    <option value={DataParameter.Voltage}>Napětí</option>
+                  </select>
+                )}
                 <select
-                  onChange={(e) =>
-                    setChartedParameter(parseInt(e.target.value))
-                  }
+                  onChange={(e) => setDisplayType(parseInt(e.target.value))}
                 >
-                  <option value={DataParameter.Temperature}>Teplota</option>
-                  <option value={DataParameter.Humidity}>Vlhkost</option>
-                  <option value={DataParameter.RSSI}>RSSI</option>
-                  <option value={DataParameter.Voltage}>Napětí</option>
+                  <option value={DisplayType.Matrix} selected>
+                    Hodnoty
+                  </option>
+                  <option value={DisplayType.Chart}>Graf</option>
                 </select>
-              )}
-              <select
-                onChange={(e) => setDisplayType(parseInt(e.target.value))}
-              >
-                <option value={DisplayType.Matrix} selected>
-                  Hodnoty
-                </option>
-                <option value={DisplayType.Chart}>Graf</option>
-              </select>
+              </div>
+              <div className="flex flex-row justify-center flex-grow">
+                {displayType === DisplayType.Matrix ? (
+                  latestGroupData && (
+                    <table className="group_data_matrix w-full h-96 mt-8">
+                      <thead>
+                        <tr>
+                          <td></td>
+                          <td className="font-bold">Průměr</td>
+                          <td className="font-bold">Nejnižší</td>
+                          <td className="font-bold">Nejvyšší</td>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="font-bold">Teplota</td>
+                          <td>
+                            {formatSensorValue(
+                              avgVal(latestGroupData.temperature),
+                              DataParameter.Temperature
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              minVal(latestGroupData.temperature),
+                              DataParameter.Temperature
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              maxVal(latestGroupData.temperature),
+                              DataParameter.Temperature
+                            )}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="font-bold">Vlhkost</td>
+                          <td>
+                            {formatSensorValue(
+                              avgVal(latestGroupData.humidity),
+                              DataParameter.Humidity
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              minVal(latestGroupData.humidity),
+                              DataParameter.Humidity
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              maxVal(latestGroupData.humidity),
+                              DataParameter.Humidity
+                            )}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="font-bold">RSSI</td>
+                          <td>
+                            {formatSensorValue(
+                              avgVal(latestGroupData.rssi),
+                              DataParameter.RSSI
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              minVal(latestGroupData.rssi),
+                              DataParameter.RSSI
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              maxVal(latestGroupData.rssi),
+                              DataParameter.RSSI
+                            )}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="font-bold">Napětí</td>
+                          <td>
+                            {formatSensorValue(
+                              avgVal(latestGroupData.voltage),
+                              DataParameter.Voltage
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              minVal(latestGroupData.voltage),
+                              DataParameter.Voltage
+                            )}
+                          </td>
+                          <td>
+                            {formatSensorValue(
+                              maxVal(latestGroupData.voltage),
+                              DataParameter.Voltage
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  )
+                ) : (
+                  <InteractivePlot
+                    chartedSensors={chartedData}
+                    showLegend={true}
+                    includeSensorNameInTraceName={true}
+                  />
+                )}
+              </div>
             </div>
-            <div className="flex flex-row justify-center flex-grow">
-              {displayType === DisplayType.Matrix ? (
-                latestGroupData && (
-                  <table className="group_data_matrix w-full h-96 mt-8">
-                    <thead>
-                      <tr>
-                        <td></td>
-                        <td className="font-bold">Průměr</td>
-                        <td className="font-bold">Nejnižší</td>
-                        <td className="font-bold">Nejvyšší</td>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="font-bold">Teplota</td>
-                        <td>
-                          {formatSensorValue(
-                            avgVal(latestGroupData.temperature),
-                            DataParameter.Temperature
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            minVal(latestGroupData.temperature),
-                            DataParameter.Temperature
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            maxVal(latestGroupData.temperature),
-                            DataParameter.Temperature
-                          )}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="font-bold">Vlhkost</td>
-                        <td>
-                          {formatSensorValue(
-                            avgVal(latestGroupData.humidity),
-                            DataParameter.Humidity
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            minVal(latestGroupData.humidity),
-                            DataParameter.Humidity
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            maxVal(latestGroupData.humidity),
-                            DataParameter.Humidity
-                          )}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="font-bold">RSSI</td>
-                        <td>
-                          {formatSensorValue(
-                            avgVal(latestGroupData.rssi),
-                            DataParameter.RSSI
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            minVal(latestGroupData.rssi),
-                            DataParameter.RSSI
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            maxVal(latestGroupData.rssi),
-                            DataParameter.RSSI
-                          )}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="font-bold">Napětí</td>
-                        <td>
-                          {formatSensorValue(
-                            avgVal(latestGroupData.voltage),
-                            DataParameter.Voltage
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            minVal(latestGroupData.voltage),
-                            DataParameter.Voltage
-                          )}
-                        </td>
-                        <td>
-                          {formatSensorValue(
-                            maxVal(latestGroupData.voltage),
-                            DataParameter.Voltage
-                          )}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                )
-              ) : (
-                <InteractivePlot
-                  chartedSensors={chartedData}
-                  showLegend={true}
-                  includeSensorNameInTraceName={true}
-                />
-              )}
-            </div>
-          </div>
+          )}
         </>
       }
       footer={
@@ -334,6 +336,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
                 return;
               }
               functions.fetchGroupList();
+              functions.fetchSensorList();
             }
             setIsOpen(false);
           }}
