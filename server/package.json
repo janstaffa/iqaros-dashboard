@@ -7,6 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "rum": "tsc -w src/index.ts",
+    "build": "tsc",
     "watch": "ts-node-dev --respawn --clear --rs --files src/index.ts"
   },
   "keywords": [],
@@ -18,10 +19,12 @@
     "@types/pg": "^8.11.0",
     "@types/pg-format": "^1.0.5",
     "body-parser": "^1.20.2",
+    "connect-redis": "^7.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "express-fileupload": "^1.4.3",
+    "express-session": "^1.18.0",
     "mqtt": "^5.3.4",
     "pg": "^8.11.3",
     "pg-format": "^1.0.4",
@@ -34,6 +37,8 @@
   },
   "devDependencies": {
     "@types/express-fileupload": "^1.4.4",
-    "@types/uuid": "^9.0.8"
+    "@types/express-session": "^1.17.10",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.3.3"
   }
 }

@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { Client as PostgresClient, QueryResult } from 'pg';
+import { Pool, QueryResult } from 'pg';
 import { redisClient } from '..';
 import { DATA_PARAMETER_KEYS, getFullRedisLatestDataKey } from '../constants';
 import {
@@ -9,10 +9,7 @@ import {
   SensorDataParameter,
 } from '../types';
 
-export async function sensorApiController(
-  app: Express,
-  dbClient: PostgresClient
-) {
+export function sensorApiController(app: Express, dbClient: Pool) {
   app.get('/api/sensorlist', async (req, res) => {
     try {
       const sensorsResult: QueryResult<SensorDBObject> = await dbClient.query(

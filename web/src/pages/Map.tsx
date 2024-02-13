@@ -5,7 +5,7 @@ import { DataContext } from '../App';
 import InteractiveMap from '../components/InteractiveMap';
 import MapModal from '../components/Modals/MapModal';
 import SensorModal from '../components/Modals/SensorModal';
-import { APP_API_BASE_PATH } from '../constants';
+import { APP_API_BASE_PATH } from '../config';
 import {
   DisplayParameter,
   MapColorScheme,
@@ -29,7 +29,7 @@ function Heatmap() {
 
   const fetchMapList = () => {
     setIsLoadingMap(true);
-    fetch(APP_API_BASE_PATH + '/maplist')
+    fetch(APP_API_BASE_PATH + '/maplist', { credentials: 'include' })
       .then((data) => data.json())
       .then((parsed_data) => {
         const response = parsed_data as MapListApiResponse;
@@ -172,7 +172,7 @@ function Heatmap() {
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center text-3xl bg-light-normal">
-          <span className='pt-20'>
+          <span className="pt-20">
             Žádná mapa -{' '}
             <span
               className="link"

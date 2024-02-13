@@ -1,8 +1,7 @@
 /node_modules
 /dist
-mosquitto_passwd
-mosquitto.conf
-data.db
+/mqtt
+/db
 
 /userdata
 

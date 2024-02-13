@@ -1,3 +1,9 @@
+declare module 'express-session' {
+  interface SessionData {
+    auth: boolean;
+  }
+}
+
 export interface IQAROS_Response {
   mType: string;
   data: {

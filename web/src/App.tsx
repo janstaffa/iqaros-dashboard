@@ -6,27 +6,26 @@ import {
   useRef,
   useState,
 } from 'react';
-import { BallTriangle } from 'react-loader-spinner';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Nav from './Nav';
-import {
-  API_BASE_PATH,
-  APP_API_BASE_PATH,
-  DATA_PARAMETER_KEYS,
-  POOLING_INTERVAL,
-} from './constants';
+import { LayoutWithNav, LayoutWithoutNav } from './components/Utils/Layouts';
+import { ProtectedRoute } from './components/Utils/ProtectedRoute';
+import { API_BASE_PATH, APP_API_BASE_PATH } from './config';
+import { DATA_PARAMETER_KEYS, POOLING_INTERVAL } from './constants';
 import Chart from './pages/Chart';
 import Dashboard from './pages/Dashboard';
 import Docs from './pages/Docs';
 import Groups from './pages/Groups';
+import LoginPage from './pages/Login';
 import Heatmap from './pages/Map';
+import NotFound from './pages/NotFound';
 import Sensors from './pages/Sensors';
 import {
   FetchDataApiResponse,
   FetchDataData,
   FetchDataDataWrapped,
+  GenericApiResponse,
   GroupListApiResponse,
   Sensor,
   SensorDataCache,
@@ -49,12 +48,79 @@ interface FunctionContextType {
     to: number
   ) => Promise<FetchDataDataWrapped>;
 }
+
+interface AuthContextType {
+  isAuth: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  logout: () => void;
+}
 // @ts-ignore
 export const DataContext = createContext<DataContextType>();
 // @ts-ignore
 export const FunctionContext = createContext<FunctionContextType>();
+// @ts-ignore
+export const AuthContext = createContext<AuthContextType>();
 
 function App() {
+  const [isAuth, setIsAuth] = useState<boolean | null>(null);
+  const login = (username: string, password: string) => {
+    return new Promise<void>((res, rej) => {
+      const payload = {
+        username,
+        password,
+      };
+      fetch(APP_API_BASE_PATH + '/login', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        credentials: 'include',
+      })
+        .then((data) => data.json())
+        .then((response: GenericApiResponse) => {
+          if (response.status === 'err') throw new Error(response.message);
+          setIsAuth(true);
+          window.localStorage.setItem('auth', JSON.stringify({ isAuth: true }));
+          toast.success('Uživatel přihlášen');
+          res();
+        })
+        .catch((e: Error) => {
+          console.error(e);
+          rej(e);
+        });
+    });
+  };
+  const logout = () => {
+    fetch(APP_API_BASE_PATH + '/logout', {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
+    })
+      .then((data) => data.json())
+      .then((response: GenericApiResponse) => {
+        if (response.status === 'err') throw new Error(response.message);
+        setIsAuth(false);
+        window.localStorage.setItem('auth', JSON.stringify({ isAuth: false }));
+        toast.success('Uživatel odhlášen');
+      })
+      .catch((e: Error) => {
+        console.error(e);
+        toast.error(e.message);
+      });
+  };
+
+  useEffect(() => {
+    const auth = window.localStorage.getItem('auth');
+    if (!auth) {
+      setIsAuth(false);
+      return;
+    }
+    const parsed = JSON.parse(auth);
+    setIsAuth(!!parsed.isAuth);
+  }, []);
+  
   const [sensorList, setSensorList] = useState<Sensor[]>([]);
   const [groupList, setGroupList] = useState<SensorGroup[]>([]);
 
@@ -67,7 +133,7 @@ function App() {
   const fetchSensorList = useCallback(async (inBackground: boolean = false) => {
     if (!inBackground) setSensorListLoading(true);
     return new Promise<Sensor[]>((res, rej) =>
-      fetch(APP_API_BASE_PATH + '/sensorlist')
+      fetch(APP_API_BASE_PATH + '/sensorlist', { credentials: 'include' })
         .then((data) => data.json())
         .then((response: SensorListApiResponse) => {
           if (response.status === 'err') throw new Error(response.message);
@@ -96,7 +162,7 @@ function App() {
 
   const fetchGroupList = useCallback((inBackground: boolean = false) => {
     if (!inBackground) setGroupListLoading(true);
-    fetch(APP_API_BASE_PATH + '/grouplist')
+    fetch(APP_API_BASE_PATH + '/grouplist', { credentials: 'include' })
       .then((data) => data.json())
       .then((response: GroupListApiResponse) => {
         if (response.status === 'err') throw new Error(response.message);
@@ -120,7 +186,9 @@ function App() {
     if (!inBackground) setLatestDataLoading(true);
     let query = `?sensorId=${sensorIds.join(',')}`;
 
-    return fetch(API_BASE_PATH + '/fetchdata' + query)
+    return fetch(API_BASE_PATH + '/fetchdata' + query, {
+      credentials: 'include',
+    })
       .then((data) => data.json())
       .then((response: FetchDataApiResponse) => {
         if (response.status === 'err') throw new Error(response.message);
@@ -199,7 +267,7 @@ function App() {
       console.log('GETTING FROM SERVER');
       // console.log(cachedSensorsData);
       return new Promise<FetchDataDataWrapped>((res, rej) =>
-        fetch(API_BASE_PATH + '/fetchdata' + query)
+        fetch(API_BASE_PATH + '/fetchdata' + query, { credentials: 'include' })
           .then((data) => data.json())
           .then((response: FetchDataApiResponse) => {
             if (response.status === 'err') throw new Error(response.message);
@@ -229,6 +297,7 @@ function App() {
   }, [sensorListLoading, groupListLoading, latestDataLoading]);
 
   useEffect(() => {
+    if (!isAuth) return;
     fetchSensorList().then((d) => {
       fetchLatestSensorData(d.map((s) => s.sensor_id));
     });
@@ -247,7 +316,7 @@ function App() {
     return () => {
       clearInterval(poolingLoop);
     };
-  }, [fetchGroupList, fetchSensorList]);
+  }, [fetchGroupList, fetchSensorList, isAuth]);
 
   const dataContextValue = useMemo(
     () => ({
@@ -267,40 +336,70 @@ function App() {
     [fetchSensorList, fetchGroupList, getSensorDataInPeriod]
   );
 
+  // Wait to get auth state from localstorage
+  if (isAuth === null) return null;
   return (
     <div className="app">
-      <DataContext.Provider value={dataContextValue}>
-        <FunctionContext.Provider value={functionContextValue}>
-          <BrowserRouter>
-            <Nav />
-            <main>
-              <>
-                {!loaderVisible && (
-                  <Routes>
-                    <Route index element={<Dashboard />} />
-                    <Route path="map" element={<Heatmap />} />
-                    <Route path="sensors" element={<Sensors />} />
-                    <Route path="groups" element={<Groups />} />
-                    <Route path="chart" element={<Chart />} />
-                    <Route path="docs" element={<Docs />} />
-                    <Route path="*" element={<Dashboard />} />
-                  </Routes>
-                )}
-                <BallTriangle
-                  height={100}
-                  width={100}
-                  radius={5}
-                  color="#11547a"
-                  ariaLabel="Loading..."
-                  wrapperClass="loader"
-                  visible={loaderVisible}
-                />
-              </>
-            </main>
-          </BrowserRouter>
-          <ToastContainer style={{zIndex: 999999}}/>
-        </FunctionContext.Provider>
-      </DataContext.Provider>
+      <AuthContext.Provider value={{ isAuth, login, logout }}>
+        <DataContext.Provider value={dataContextValue}>
+          <FunctionContext.Provider value={functionContextValue}>
+            <BrowserRouter>
+              <Routes>
+                <Route
+                  element={<LayoutWithNav loaderVisible={loaderVisible} />}
+                >
+                  <Route
+                    index
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="map"
+                    element={
+                      <ProtectedRoute>
+                        <Heatmap />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="sensors"
+                    element={
+                      <ProtectedRoute>
+                        <Sensors />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="groups"
+                    element={
+                      <ProtectedRoute>
+                        <Groups />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="chart"
+                    element={
+                      <ProtectedRoute>
+                        <Chart />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="docs" element={<Docs />} />
+                </Route>
+                <Route element={<LayoutWithoutNav loaderVisible={false} />}>
+                  <Route path="login" element={<LoginPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+            <ToastContainer style={{ zIndex: 999999 }} />
+          </FunctionContext.Provider>
+        </DataContext.Provider>
+      </AuthContext.Provider>
     </div>
   );
 }

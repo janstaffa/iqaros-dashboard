@@ -1,7 +1,7 @@
 import { Express, Request } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { Client as PostgresClient, QueryResult } from 'pg';
+import { Pool, QueryResult } from 'pg';
 import format from 'pg-format';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,11 +13,12 @@ import {
   getFullRedisLatestDataKey,
 } from '../constants';
 import { DashboardTilesDBObject, MapsDBObject, SensorDataAll } from '../types';
-import { generateRandomColor } from './utils';
+import { generateRandomColor } from '../utils';
+import { auth } from './authController';
 
-export function appApiController(app: Express, dbClient: PostgresClient) {
+export function appApiController(app: Express, dbClient: Pool) {
   // === Sensors ===
-  app.get('/app/sensorlist', async (req, res) => {
+  app.get('/app/sensorlist', auth, async (req, res) => {
     try {
       const sensor_rows = await dbClient.query('SELECT * FROM sensors');
       const sensors: any[] = [];
@@ -88,7 +89,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.post('/app/edit_sensor', async (req, res) => {
+  app.post('/app/edit_sensor', auth, async (req, res) => {
     const { sensorId, newSensorName, newCheckedGroups } = req.body;
     try {
       dbClient.query(
@@ -157,7 +158,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   };
 
-  app.get('/app/grouplist', async (req, res) => {
+  app.get('/app/grouplist', auth, async (req, res) => {
     try {
       const groupRows = await dbClient.query(
         'SELECT * FROM sensor_groups ORDER BY group_name ASC'
@@ -187,7 +188,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.post('/app/newgroup', async (req, res) => {
+  app.post('/app/newgroup', auth, async (req, res) => {
     try {
       const newGroupName = await getUniqueGroupName(NEW_GROUP_NAME_TEMPLATE);
       const newGroupColor = generateRandomColor();
@@ -208,7 +209,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.post('/app/removegroup', async (req, res) => {
+  app.post('/app/removegroup', auth, async (req, res) => {
     try {
       const { groupId } = req.body;
 
@@ -229,7 +230,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
       res.json({ status: 'err', message: 'Failed to remove group' });
     }
   });
-  app.post('/app/editgroup', async (req, res) => {
+  app.post('/app/editgroup', auth, async (req, res) => {
     const { groupId, newName, newColor } = req.body;
 
     try {
@@ -247,7 +248,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
   });
 
   // === Maps ===
-  app.post('/app/newmap', (req: Request, res) => {
+  app.post('/app/newmap', auth, (req: Request, res) => {
     try {
       const { mapName } = req.body;
       if (mapName == undefined || mapName.length == 0)
@@ -329,7 +330,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.get('/app/maplist', async (req, res) => {
+  app.get('/app/maplist', auth, async (req, res) => {
     try {
       const mapRows = await dbClient.query(
         'SELECT * FROM maps ORDER BY timestamp DESC'
@@ -423,7 +424,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.get('/app/mapimage/:mapId', async (req, res) => {
+  app.get('/app/mapimage/:mapId', auth, async (req, res) => {
     const mapId = req.params.mapId;
     if (!mapId) res.json({ status: 'err', message: 'No map ID specified' });
     try {
@@ -450,7 +451,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.post('/app/removemap', async (req, res) => {
+  app.post('/app/removemap', auth, async (req, res) => {
     try {
       const { mapId } = req.body;
 
@@ -478,7 +479,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.post('/app/editmap', async (req, res) => {
+  app.post('/app/editmap', auth, async (req, res) => {
     try {
       const {
         mapId,
@@ -517,7 +518,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
   });
 
   // === Tiles ===
-  app.post('/app/posttile', async (req: Request, res) => {
+  app.post('/app/posttile', auth, async (req: Request, res) => {
     try {
       const {
         ID,
@@ -608,7 +609,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.get('/app/tilelist', async (req, res) => {
+  app.get('/app/tilelist', auth, async (req, res) => {
     try {
       const tilesResult: QueryResult<DashboardTilesDBObject> =
         await dbClient.query(`SELECT * FROM dashboard_tiles`);
@@ -629,7 +630,7 @@ export function appApiController(app: Express, dbClient: PostgresClient) {
     }
   });
 
-  app.post('/app/removetile', async (req: Request, res) => {
+  app.post('/app/removetile', auth, async (req: Request, res) => {
     try {
       const { tileId } = req.body;
 

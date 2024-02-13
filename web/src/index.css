@@ -99,7 +99,7 @@ select:focus {
 
 .link {
   text-decoration: underline;
-  font-weight: bold;
+  /* font-weight: bold; */
   color: black;
   cursor: pointer;
 }
@@ -115,13 +115,13 @@ select:focus {
 
 /* === NAVBAR === */
 nav {
-  max-width: 80px;
+  width: 80px;
   height: 100%;
   padding: 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   background-color: var(--accent-dark);
 }
 

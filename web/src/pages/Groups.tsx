@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { DataContext, FunctionContext } from '../App';
 import GroupRow from '../components/GroupRow';
 import GroupModal from '../components/Modals/GroupModal';
-import { APP_API_BASE_PATH } from '../constants';
+import { APP_API_BASE_PATH } from '../config';
 import { GenericApiResponse, SensorGroup } from '../types';
 
 function Groups() {
@@ -19,6 +19,7 @@ function Groups() {
     fetch(APP_API_BASE_PATH + '/newgroup', {
       method: 'POST',
       mode: 'cors',
+      credentials: 'include',
     })
       .then((data) => data.json())
       .then((response: GenericApiResponse) => {
@@ -43,6 +44,7 @@ function Groups() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        credentials: 'include'
       })
         .then((data) => data.json())
         .then((response: GenericApiResponse) => {

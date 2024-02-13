@@ -5,7 +5,7 @@ import DashboardTile from '../components/DashboardTile';
 
 import { toast } from 'react-toastify';
 import DashboardModal from '../components/Modals/DashboardModal';
-import { APP_API_BASE_PATH } from '../constants';
+import { APP_API_BASE_PATH } from '../config';
 import { GenericApiResponse, Tile, TileListApiResponse } from '../types';
 
 function Dashboard() {
@@ -14,7 +14,7 @@ function Dashboard() {
   const [tileList, setTileList] = useState<Tile[]>([]);
 
   const fetchTileList = () => {
-    fetch(APP_API_BASE_PATH + '/tilelist')
+    fetch(APP_API_BASE_PATH + '/tilelist', { credentials: 'include' })
       .then((data) => data.json())
       .then((parsed_data) => {
         const response = parsed_data as TileListApiResponse;
@@ -43,6 +43,7 @@ function Dashboard() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      credentials: 'include',
     })
       .then((data) => data.json())
       .then((response: GenericApiResponse) => {

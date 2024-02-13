@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { DataContext } from '../../App';
-import { APP_API_BASE_PATH } from '../../constants';
+import { APP_API_BASE_PATH } from '../../config';
 import {
   DataParameter,
   GenericApiResponse,
@@ -140,6 +140,7 @@ const DashboardModal: React.FC<DashboardModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        credentials: 'include',
       })
         .then((data) => data.json())
         .then((response: GenericApiResponse) => {

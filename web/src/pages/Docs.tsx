@@ -1,4 +1,4 @@
-import { API_BASE_PATH } from '../constants';
+import { API_BASE_PATH } from "../config";
 
 function Docs() {
   return (

@@ -1,4 +1,8 @@
-import { DATA_PARAMETER_KEYS, SENSOR_ADDRESS_RANGE_OFFSET } from './constants';
+import {
+  DATA_PARAMETER_KEYS,
+  RANDOM_GROUP_COLORS,
+  SENSOR_ADDRESS_RANGE_OFFSET,
+} from './constants';
 import {
   FetchDataData,
   MQTTSensorData,
@@ -63,3 +67,9 @@ export const DataAllToFetchData = (
     timestamps: data?.voltage.timestamp ? [data.voltage.timestamp] : [],
   },
 });
+
+export function generateRandomColor() {
+  const idx = Math.floor(Math.random() * RANDOM_GROUP_COLORS.length);
+
+  return RANDOM_GROUP_COLORS[idx];
+}

@@ -1,0 +1,7 @@
+db
+dist
+mqtt
+node_modules
+userdata
+# .env
+.env.example

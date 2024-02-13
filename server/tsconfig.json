@@ -22,7 +22,7 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "strict": false,
-    "types": ["./src/types.d.ts"]
+    // "types": ["./src/types.d.ts"]
   },
   "exclude": ["node_modules"],
   "include": ["./src/**/*"]

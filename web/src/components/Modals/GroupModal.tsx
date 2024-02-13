@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { DataContext, FunctionContext } from '../../App';
-import { APP_API_BASE_PATH } from '../../constants';
+import { APP_API_BASE_PATH } from '../../config';
 import {
   ChartedSensor,
   DataParameter,
@@ -68,6 +68,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        credentials: 'include'
       })
         .then((data) => data.json())
         .then((response: GenericApiResponse) => {
@@ -178,8 +179,8 @@ const GroupModal: React.FC<GroupModalProps> = ({
             <div className="flex-grow overflow-hidden flex flex-col">
               <h5 className="text-xl mt-2 mb-1">Senzory</h5>
               <div className="overflow-y-auto flex-grow border p-2">
-                {displayedGroup.sensors.map((s) => (
-                  <div>{s.sensor_name}</div>
+                {displayedGroup.sensors.map((s, idx) => (
+                  <div key={idx}>{s.sensor_name}</div>
                 ))}
               </div>
             </div>

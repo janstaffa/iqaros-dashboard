@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { DataContext } from '../../App';
-import { APP_API_BASE_PATH } from '../../constants';
+import { APP_API_BASE_PATH } from '../../config';
 import {
   DisplayParameter,
   DisplayedSensor,
@@ -45,6 +45,7 @@ const MapModal: React.FC<MapModalProps> = ({
         method: 'POST',
         mode: 'cors',
         body: payload,
+        credentials: 'include'
       })
         .then((data) => data.json())
         .then((response: GenericApiResponse) => {
@@ -70,6 +71,7 @@ const MapModal: React.FC<MapModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        credentials: 'include'
       })
         .then((data) => data.json())
         .then((response: GenericApiResponse) => {
@@ -108,6 +110,7 @@ const MapModal: React.FC<MapModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        credentials: 'include'
       })
         .then((data) => data.json())
         .then((response: GenericApiResponse) => {

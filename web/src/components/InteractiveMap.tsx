@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { MdZoomIn, MdZoomOut } from 'react-icons/md';
 import { Bars } from 'react-loader-spinner';
+import { APP_API_BASE_PATH } from '../config';
 import {
-  APP_API_BASE_PATH,
   COLOR_SCHEME_TABLES,
   DEFAULT_ZOOM,
   HUMIDITY_RELATIVE_COLORS,
@@ -223,8 +223,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <svg
           width={map.image_width * mapZoom}
           height={map.image_height * mapZoom}
-          style={{zIndex: 9}}
-          className='absolute top-0 left-0'
+          style={{ zIndex: 9 }}
+          className="absolute top-0 left-0"
         >
           {displayedSensors.map((s, idx) => (
             <DisplayedSensorSVG
@@ -248,7 +248,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           alt="Map"
           width={map.image_width * mapZoom}
           height={map.image_height * mapZoom}
-          className='absolute top-0 left-0 select-none pointer-events-none'
+          className="absolute top-0 left-0 select-none pointer-events-none"
         />
       </div>
     </div>

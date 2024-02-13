@@ -2,7 +2,8 @@ import { useContext, useEffect, useState } from 'react';
 import { GrStatusGoodSmall } from 'react-icons/gr';
 import { toast } from 'react-toastify';
 import { DataContext, FunctionContext } from '../../App';
-import { APP_API_BASE_PATH, DATA_PARAMETER_VARIANTS } from '../../constants';
+import { APP_API_BASE_PATH } from '../../config';
+import { DATA_PARAMETER_VARIANTS } from '../../constants';
 import {
   ChartedSensor,
   DataParameter,
@@ -67,6 +68,7 @@ const SensorModal: React.FC<SensorModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        credentials: 'include'
       })
         .then((data) => data.json())
         .then((response: GenericApiResponse) => {
@@ -231,11 +233,11 @@ const SensorModal: React.FC<SensorModalProps> = ({
                 )}
               </div>
               <div className="flex-grow flex flex-col">
-                  <InteractivePlot
-                    chartedSensors={chartedData}
-                    showLegend={true}
-                    includeSensorNameInTraceName={false}
-                  />
+                <InteractivePlot
+                  chartedSensors={chartedData}
+                  showLegend={true}
+                  includeSensorNameInTraceName={false}
+                />
               </div>
             </div>
           </>

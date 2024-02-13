@@ -1,9 +1,9 @@
 import mqtt from 'mqtt';
 import {
-  BROKER_ADDRESS,
+  COOKIE_NAME,
   MAX_FILE_UPLOAD_SIZE,
   MQTT_RESPONSE_TOPIC,
-  getFullRedisLatestDataKey
+  getFullRedisLatestDataKey,
 } from './constants';
 
 import express from 'express';
@@ -11,118 +11,43 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
+import RedisStore from 'connect-redis';
 import dotenv from 'dotenv';
 import fileUpload from 'express-fileupload';
-import { Client as PostgresClient } from 'pg';
+import session from 'express-session';
+import fs from 'fs';
+import { Pool } from 'pg';
 import { createClient } from 'redis';
+import { MQTT, POSTGRES, REDIS, SERVER_PORT } from './config';
 import { appApiController } from './rest/appApiController';
+import { authController } from './rest/authController';
 import { sensorApiController } from './rest/sensorApiController';
-import { webServerController } from './rest/webServerController';
 import { IQAROS_Response } from './types';
 import { dataParameterToKey, parseSensor } from './utils';
 
 dotenv.config();
 
-// DATABASE
-// const db = new sqlite.Database(DB_FILE, (error) => {
-//   if (error) {
-//     return console.error(error.message);
-//   }
-// });
-
-export const redisClient = createClient();
+export const redisClient = createClient({
+  url: REDIS.URL,
+  password: REDIS.PASSWORD,
+});
 
 (async () => {
   // Connect to PostgresDB
-  const dbClient = new PostgresClient({
-    user: 'postgres',
-    password: 'admin',
-    database: 'IQAROS',
+  const dbClient = new Pool({
+    host: POSTGRES.HOST,
+    port: POSTGRES.PORT,
+    user: POSTGRES.USER,
+    password: POSTGRES.PASSWORD,
+    database: POSTGRES.DATABASE,
   });
   dbClient.on('error', (err) => console.log('Postgres Client Error', err));
   await dbClient.connect();
   console.log('Connected to PostgresDB');
 
   try {
-    await dbClient.query(
-      `CREATE TABLE IF NOT EXISTS "sensors" (
-        "sensor_id"	INT UNIQUE,
-        "network_id"	INT UNIQUE,
-        "sensor_name"	TEXT,
-        PRIMARY KEY("sensor_id")
-       );`
-    );
-    await dbClient.query(
-      `CREATE TABLE IF NOT EXISTS "sensor_data" (
-        "ID"	BIGSERIAL UNIQUE,
-        "sensor_id"	INT,
-        "timestamp"	TIMESTAMPTZ ,
-        "parameter"	TEXT,
-        "value"	REAL,
-        PRIMARY KEY("ID"),
-        FOREIGN KEY ("sensor_id") REFERENCES "sensors"("sensor_id")
-      );`
-    );
-    await dbClient.query(
-      `CREATE TABLE IF NOT EXISTS "sensor_groups" (
-        "group_id"	SERIAL UNIQUE,
-        "group_name"	TEXT,
-        "group_color"	TEXT,
-        PRIMARY KEY("group_id")
-      );`
-    );
-    await dbClient.query(
-      `CREATE TABLE IF NOT EXISTS "sensors_in_groups" (
-        "ID"	SERIAL UNIQUE,
-        "sensor_id"	INTEGER,
-        "group_id"	INTEGER,
-        PRIMARY KEY("ID"),
-        FOREIGN KEY ("group_id") REFERENCES "sensor_groups"("group_id") ON DELETE CASCADE,
-        FOREIGN KEY ("sensor_id") REFERENCES "sensors"("sensor_id")
-      );`
-    );
-    await dbClient.query(
-      `CREATE TABLE IF NOT EXISTS "maps" (
-        "map_id"	SERIAL UNIQUE,
-        "map_name"	TEXT,
-        "image_id"	TEXT UNIQUE,
-        "image_width"	INTEGER,
-        "image_height"	INTEGER,
-        "original_image_name"	TEXT,
-        "image_extension"	TEXT,
-        "timestamp"	TIMESTAMPTZ ,
-        PRIMARY KEY("map_id")
-      );`
-    );
-    await dbClient.query(
-      `CREATE TABLE IF NOT EXISTS "sensor_map_positions" (
-        "ID"	SERIAL UNIQUE,
-        "sensor_id"	INTEGER,
-        "map_id"	INTEGER,
-        "pos_x"	REAL,
-        "pos_y"	REAL,
-        PRIMARY KEY("ID"),
-        FOREIGN KEY ("map_id") REFERENCES "maps"("map_id") ON DELETE CASCADE,
-        FOREIGN KEY ("sensor_id") REFERENCES "sensors"("sensor_id")
-      );`
-    );
-    await dbClient.query(
-      `CREATE TABLE IF NOT EXISTS "dashboard_tiles" (
-        "ID"	SERIAL UNIQUE,
-        "order"	INTEGER,
-        "title"	TEXT,
-        "arg1"	INTEGER,
-        "arg1_type"	INTEGER,
-        "arg1_value"	INTEGER,
-        "arg2"	INTEGER,
-        "arg2_type"	INTEGER,
-        "arg2_value"	INTEGER,
-        "operation"	INTEGER,
-        "parameter"	INTEGER,
-        "show_graphic"	BOOLEAN DEFAULT false,
-        PRIMARY KEY("ID")
-      );`
-    );
+    const query = fs.readFileSync('./sql/init_db.sql', 'utf-8');
+    await dbClient.query(query);
   } catch (e) {
     console.error('ERROR when creating tables: ', e);
   }
@@ -134,7 +59,7 @@ export const redisClient = createClient();
   console.log('Connected to Redis');
 
   // Connect to MQTT Client
-  const mqttClient = mqtt.connect(BROKER_ADDRESS, {
+  const mqttClient = mqtt.connect(MQTT.ADDRESS, {
     clientId: 'IQAROS-KG-Client',
     clean: true,
     reconnectPeriod: 1000,
@@ -172,9 +97,9 @@ export const redisClient = createClient();
 
     mqttClient.on('message', async (topic, message) => {
       const messageTimestamp = new Date();
-      // message is Buffer
+
       const parsed_message = JSON.parse(message.toString()) as IQAROS_Response;
-      // console.log('data', JSON.stringify(parsed_message));
+
       const sensors = parsed_message.data.rsp.result.sensors;
 
       console.log(parsed_message.mType, parsed_message.data.msgId);
@@ -205,21 +130,6 @@ export const redisClient = createClient();
             );
           }
 
-          // db.all(
-          //   'SELECT * FROM sensors WHERE sensor_id = ? OR network_id = ?',
-          //   [parsedSensor.sensorId, parsedSensor.networkId],
-          //   (err, rows) => {
-          //     if (err) return console.error(err);
-          //     if (rows && rows.length === 0) {
-          //       db.run(
-          //         'INSERT INTO sensors (sensor_id, network_id, sensor_name) VALUES (?, ?, ?)',
-          //         parsedSensor.sensorId,
-          //         parsedSensor.networkId,
-          //         `Sensor ${parsedSensor.sensorId}`
-          //       );
-          //     }
-          //   }
-          // );
           if (parsedSensor.data.value !== null) {
             const parameterKey = dataParameterToKey(parsedSensor.parameter);
             const redisKey = getFullRedisLatestDataKey(
@@ -242,13 +152,6 @@ export const redisClient = createClient();
               parsedSensor.data.value,
             ]
           );
-          // db.run(
-          //   'INSERT INTO sensor_data (sensor_id, timestamp, parameter, value) VALUES (?, ?, ?, ?)',
-          //   parsedSensor.sensorId,
-          //   parsedSensor.data.timestamp,
-          //   parsedSensor.parameter,
-          //   parsedSensor.data.value
-          // );
         } catch (e) {
           console.log(e);
         }
@@ -268,11 +171,32 @@ export const redisClient = createClient();
     });
   });
 
-  // Express.js endpoint
+  // Express app
   const app = express();
-  const port = 4000;
+  
+  app.use(cors({ origin: true, credentials: true }));
+  
+  // Session
+  const redisSStore = new RedisStore({
+    client: redisClient,
+  });
 
-  app.use(cors());
+  app.use(
+    session({
+      name: COOKIE_NAME,
+      secret: process.env.SESSION_SECRET || 'SESSION_SECRET_12345',
+      resave: false,
+      saveUninitialized: false,
+      store: redisSStore,
+      // cookie: {
+      //   maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+      //   httpOnly: true,
+      //   secure: false,
+      //   sameSite: 'lax',
+      // },
+    })
+  );
+
   app.use(bodyParser.json());
 
   app.use(
@@ -289,12 +213,12 @@ export const redisClient = createClient();
     })
   );
 
-  // Add all rest API endpoints
-  await sensorApiController(app, dbClient);
+  // Add rest endpoints
+  authController(app);
+  sensorApiController(app, dbClient);
   appApiController(app, dbClient);
-  webServerController(app);
 
-  app.listen(port, () => {
-    console.log(`Listening on port ${port}`);
+  app.listen(SERVER_PORT, () => {
+    console.log(`Listening on port ${SERVER_PORT}`);
   });
 })();
