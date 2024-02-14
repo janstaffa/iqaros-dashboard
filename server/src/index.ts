@@ -102,9 +102,12 @@ export const redisClient = createClient({
 
       const sensors = parsed_message.data.rsp.result.sensors;
 
-      console.log(parsed_message.mType, parsed_message.data.msgId);
-      if (parsed_message.mType == 'iqrfEmbedFrc_SendSelective')
-        console.log(JSON.stringify(parsed_message));
+      console.log(
+        messageTimestamp.toISOString() + '>',
+        parsed_message.data.msgId
+      );
+      // if (parsed_message.mType == 'iqrfEmbedFrc_SendSelective')
+      //   console.log(JSON.stringify(parsed_message));
       if (!sensors) return;
 
       for (const sensor of sensors) {
@@ -173,9 +176,9 @@ export const redisClient = createClient({
 
   // Express app
   const app = express();
-  
+
   app.use(cors({ origin: true, credentials: true }));
-  
+
   // Session
   const redisSStore = new RedisStore({
     client: redisClient,
