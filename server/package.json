@@ -1,5 +1,5 @@
 {
-  "name": "kgheatmap",
+  "name": "iqarosdash-server",
   "version": "1.0.0",
   "description": "",
   "homepage": ".",
@@ -11,7 +11,7 @@
     "watch": "ts-node-dev --respawn --clear --rs --files src/index.ts"
   },
   "keywords": [],
-  "author": "",
+  "author": "janstaffa",
   "license": "ISC",
   "dependencies": {
     "@types/cors": "^2.8.17",
@@ -30,10 +30,8 @@
     "pg-format": "^1.0.4",
     "redis": "^4.6.12",
     "sharp": "^0.33.2",
-    "sqlite3": "^5.1.7",
     "ts-node-dev": "^2.0.0",
-    "uuid": "^9.0.1",
-    "ws": "^8.16.0"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/express-fileupload": "^1.4.4",
