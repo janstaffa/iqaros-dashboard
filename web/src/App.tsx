@@ -120,7 +120,7 @@ function App() {
     const parsed = JSON.parse(auth);
     setIsAuth(!!parsed.isAuth);
   }, []);
-  
+
   const [sensorList, setSensorList] = useState<Sensor[]>([]);
   const [groupList, setGroupList] = useState<SensorGroup[]>([]);
 
@@ -299,12 +299,14 @@ function App() {
   useEffect(() => {
     if (!isAuth) return;
     fetchSensorList().then((d) => {
+      if (d.length === 0) return;
       fetchLatestSensorData(d.map((s) => s.sensor_id));
     });
     fetchGroupList();
 
     const poolingLoop = setInterval(() => {
       fetchSensorList(true).then((d) => {
+        if (d.length === 0) return;
         fetchLatestSensorData(
           d.map((s) => s.sensor_id),
           true

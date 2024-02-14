@@ -1,5 +1,4 @@
 FROM node:21-alpine
-
 WORKDIR /server
 
 # Install dependencies
@@ -19,6 +18,6 @@ RUN npm run build
 RUN mkdir -p /server/userdata/upload/maps
 
 # Run
-EXPOSE 4000
+EXPOSE 8080
 
 CMD ["node", "dist/index.js"]
