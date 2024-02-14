@@ -103,7 +103,10 @@ export const redisClient = createClient({
       const sensors = parsed_message.data.rsp.result.sensors;
 
       console.log(
-        messageTimestamp.toISOString() + '>',
+        new Date(
+          messageTimestamp.getTime() -
+            messageTimestamp.getTimezoneOffset() * 60000
+        ).toISOString() + '>',
         parsed_message.data.msgId
       );
       // if (parsed_message.mType == 'iqrfEmbedFrc_SendSelective')
