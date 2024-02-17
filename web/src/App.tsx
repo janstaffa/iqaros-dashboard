@@ -93,6 +93,9 @@ function App() {
     });
   };
   const logout = () => {
+    setIsAuth(false);
+    window.localStorage.setItem('auth', JSON.stringify({ isAuth: false }));
+    
     fetch(APP_API_BASE_PATH + '/logout', {
       method: 'POST',
       mode: 'cors',
@@ -101,8 +104,6 @@ function App() {
       .then((data) => data.json())
       .then((response: GenericApiResponse) => {
         if (response.status === 'err') throw new Error(response.message);
-        setIsAuth(false);
-        window.localStorage.setItem('auth', JSON.stringify({ isAuth: false }));
         toast.success('Uživatel odhlášen');
       })
       .catch((e: Error) => {

@@ -61,7 +61,7 @@ function Groups() {
 
   useEffect(() => {
     setLocalGroupList(data.groupList);
-  }, [data]);
+  }, [data.groupList]);
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [displayedGroup, setDisplayedGroup] = useState<SensorGroup | null>(

@@ -65,13 +65,15 @@ function Dashboard() {
   return (
     <>
       <div className="floating_buttons">
-        <button
-          onClick={() => {
-            setIsEditing(!isEditing);
-          }}
-        >
-          <MdSettings />
-        </button>
+        {tileList.length > 0 && (
+          <button
+            onClick={() => {
+              setIsEditing(!isEditing);
+            }}
+          >
+            <MdSettings />
+          </button>
+        )}
         <button
           onClick={() => {
             setEditedTile(null);
