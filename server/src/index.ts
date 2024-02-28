@@ -60,7 +60,7 @@ export const redisClient = createClient({
 
   // Connect to MQTT Client
   const mqttClient = mqtt.connect(MQTT.ADDRESS, {
-    clientId: 'IQAROS-KG-Client',
+    clientId: 'IQAROSDASH-Client',
     clean: true,
     reconnectPeriod: 1000,
     keepalive: 1000,
