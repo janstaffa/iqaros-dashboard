@@ -39,13 +39,15 @@ docker compose logs -f
 
 - a) PostgreSQL DB - [download](https://www.postgresql.org/download/) (defaultní port, vytvořit uživatele - v dalším kroku budou potřeba údaje)
 - b) Redis - [download](https://redis.io/docs/install/install-redis/) (defaultní port, heslo - bude potřeba v dalším kroku)
-- c) Mosquitto - [download](https://mosquitto.org/download/) (spustit na pozadí s portem 1883 - defaultní)
+- c) Mosquitto - [download](https://mosquitto.org/download/)
+	- vytvořit `mosquitto_password` soubor s heslem a zadat jeho cestu do `mosquitto/mosquitto.conf` místo `/etc/mosquitto/mosquitto_passwd` [více](https://mosquitto.org/documentation/authentication-methods/)
+	- spustit: `mosquitto -c mosquitto/mosquitto.conf -v`
 
 ### 2. Nastavit enviromental variables serveru
 
 - a) Přejmenovat soubor `/server/.env.example` na `/server/.env` a vyplnit proměnné
 - b) Přidat `NODE_ENV=production`
-- c) Přidat `POSTGRES_DB=?`, `POSTGRES_PASSWORD=?`, `POSTGRES_USER=?`, `REDIS_PASSWORD=?` (místo ? přihlašovací údaje Postgres a Redisu)
+- c) Přidat `POSTGRES_DB=?`, `POSTGRES_PASSWORD=?`, `POSTGRES_USER=?`, `REDIS_PASSWORD=?, MOSQUITTO_USERNAME=?, MOSQUITTO_PASSWORD=?` (místo ? přihlašovací údaje Postgres, Redis a Mosquitto)
 
 ### 3. Spustit server
 
