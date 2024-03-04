@@ -65,6 +65,7 @@ node dist/index.js
 
 ### 4. Spustit webovou aplikace
 
+Nastavit v [config.ts](https://github.com/janstaffa/iqaros-dashboard/blob/d1eefed88d049612d303f7d911edf8efcd695f13/web/src/config.ts#L3) SERVER_HOST/SERVER_PORT na správné hodnoty (server defaultně běží na portu 8080) 
 ```sh
 cd web
 
