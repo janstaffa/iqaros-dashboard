@@ -39,9 +39,12 @@ services:
     environment:
       - NODE_ENV=production
       - DB_USER=${POSTGRES_USER}
+      - POSTGRES_HOST="db"
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_DATABASE=${POSTGRES_DB}
+      - REDIS_URL="redis://redis"
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MOSQUITTO_URL="mqtt://mosquitto"
       - MOSQUITTO_USERNAME=${MOSQUITTO_USERNAME}
       - MOSQUITTO_PASSWORD=${MOSQUITTO_PASSWORD}
     restart: always
